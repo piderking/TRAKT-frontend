@@ -123,6 +123,37 @@ const DEFAULT_PLUGINS: PluginManifest[] = [
         { id: 'g2', title: 'Cyberpunk 2077', subtitle: 'Phantom Liberty • 12.4 hrs', tag: 'Sci-Fi', rating: 8.9, progress: 60 }
       ]
     }
+  },
+  {
+    id: 'health',
+    name: 'Health & Biometrics Telemetry',
+    description: 'Tracks heart rate (BPM), daily steps, active calories, sleep duration, and SpO2 from Android Health Connect.',
+    version: '1.0.0',
+    author: 'Android Health Subsystem',
+    category: 'telemetry',
+    endpointUrl: '/api/v1/health/summary',
+    uiEndpointUrl: '/static/plugins/health/ui',
+    enabled: true,
+    isCustomizable: true,
+    pingMs: 12,
+    theme: {
+      primaryColor: '#EF4444',
+      glowColor: 'rgba(239, 68, 68, 0.35)',
+      gradient: 'from-red-600 to-rose-500',
+      badgeBg: 'bg-red-500/10 text-red-400 border-red-500/20',
+      cardBorder: 'hover:border-red-500/50'
+    },
+    widget: {
+      title: 'BIOMETRICS & VITAL SCROBBLER',
+      subtitle: 'Android Health Connect Telemetry',
+      metricValue: '74 BPM',
+      metricLabel: '8,840 Steps Today',
+      items: [
+        { id: 'h1', title: 'Heart Rate Monitor', subtitle: '74 BPM Current • 58 BPM Resting', tag: 'Vitals', progress: 74 },
+        { id: 'h2', title: 'Daily Step Goal', subtitle: '8,840 / 10,000 steps (6.4 km)', tag: 'Activity', progress: 88 },
+        { id: 'h3', title: 'Sleep & SpO2 Recovery', subtitle: '7.8 hrs Sleep • 99% SpO2', tag: 'Recovery', progress: 99 }
+      ]
+    }
   }
 ];
 
