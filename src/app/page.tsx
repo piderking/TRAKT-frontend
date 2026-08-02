@@ -1,434 +1,319 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import { usePlugins } from '../context/PluginContext';
 import { 
+  Radio, 
+  ShieldCheck, 
   Activity, 
-  Database, 
-  Server, 
   Cpu, 
   RefreshCw, 
-  ShieldCheck, 
-  Key, 
-  Zap, 
-  Film, 
-  Tv, 
-  Clock, 
+  Sparkles, 
   CheckCircle2, 
-  AlertCircle,
-  Play,
-  ArrowRight
+  Layers, 
+  Flame, 
+  Code2, 
+  Tv, 
+  Gamepad2, 
+  BookOpen, 
+  Zap,
+  ArrowUpRight
 } from 'lucide-react';
 
-interface SystemStatus {
-  service: string;
-  status: string;
-  uptime: number;
-  storage_engine: {
-    redis: string;
-    postgres: string;
-    memory_cache_entries: number;
-    stats: {
-      hot_hits: number;
-      cold_hits: number;
-      fallback_hits: number;
-      sets: number;
-    };
-  };
-  plugins: {
-    movies: {
-      status: string;
-      url: string;
-    };
-  };
-}
+export default function NodeDashboardPage() {
+  const { plugins, activePluginId, activePlugin, setActivePluginId } = usePlugins();
+  const [deviceCodeData, setDeviceCodeData] = useState<{ user_code: string; verification_url: string } | null>(null);
+  const [loadingAuth, setLoadingAuth] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-interface UpNextItem {
-  id: string;
-  title: string;
-  type: string;
-  year: number;
-  progress_pct: number;
-  runtime_min: number;
-  rating: number;
-  poster: string;
-  genre: string[];
-  next_episode?: {
-    season: number;
-    number: number;
-    title: string;
-  };
-}
-
-export default function NodeDashboard() {
-  const [status, setStatus] = useState<SystemStatus | null>(null);
-  const [upNextList, setUpNextList] = useState<UpNextItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [deviceCode, setDeviceCode] = useState<any>(null);
-  const [logs, setLogs] = useState<Array<{ id: number; time: string; msg: string; type: string }>>([]);
-
-  const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
-
-  const fetchData = async () => {
-    setLoading(true);
+  const handleRequestDeviceCode = async () => {
+    setLoadingAuth(true);
     try {
-      // Fetch system status
-      const resStatus = await fetch(`${API_BASE}/api/v1/system/status`);
-      if (resStatus.ok) {
-        const dataStatus = await resStatus.json();
-        setStatus(dataStatus);
-      } else {
-        // Fallback static structure if backend loading
-        setStatus({
-          service: "trakt-core-gateway",
-          status: "healthy",
-          uptime: 1420.5,
-          storage_engine: {
-            redis: "connected",
-            postgres: "connected",
-            memory_cache_entries: 14,
-            stats: { hot_hits: 128, cold_hits: 19, fallback_hits: 2, sets: 45 }
-          },
-          plugins: { movies: { status: "online", url: "http://plugin-movies:8000" } }
-        });
-      }
-
-      // Fetch Up-Next watchlist
-      const resUpNext = await fetch(`${API_BASE}/api/v1/user/up-next`);
-      if (resUpNext.ok) {
-        const dataUpNext = await resUpNext.json();
-        setUpNextList(dataUpNext.up_next || []);
-      }
-    } catch (err) {
-      console.warn("Backend not available directly, displaying cached mock data", err);
-      // Fallback data for preview
-      setUpNextList([
-        {
-          id: "m-101",
-          title: "Dune: Part Two",
-          type: "movie",
-          year: 2024,
-          progress_pct: 0,
-          runtime_min: 166,
-          rating: 8.6,
-          poster: "https://images.unsplash.com/photo-1534447677768-be436bb09401?w=400&q=80",
-          genre: ["Sci-Fi", "Adventure"]
-        },
-        {
-          id: "s-202",
-          title: "Severance",
-          type: "show",
-          year: 2022,
-          progress_pct: 88.5,
-          runtime_min: 55,
-          rating: 8.7,
-          poster: "https://images.unsplash.com/photo-1518709268805-4e9042af9f23?w=400&q=80",
-          genre: ["Sci-Fi", "Thriller"],
-          next_episode: { season: 2, number: 1, title: "Hello Ms. Cobel" }
-        }
-      ]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-
-    // Initial mock logs
-    const initialLogs = [
-      { id: 1, time: new Date().toLocaleTimeString(), msg: "TieredStorageEngine initialized. Hot: Redis, Cold: Postgres", type: "system" },
-      { id: 2, time: new Date().toLocaleTimeString(), msg: "Plugin Movies registered at http://plugin-movies:8000", type: "plugin" },
-      { id: 3, time: new Date().toLocaleTimeString(), msg: "Scrobble event processed: Severance S02E01 (88.5%)", type: "scrobble" },
-      { id: 4, time: new Date().toLocaleTimeString(), msg: "Cold offload performed for large metadata dict key payload > 100KB", type: "storage" },
-    ];
-    setLogs(initialLogs);
-
-    // Live log generator interval
-    const interval = setInterval(() => {
-      const logTypes = ["scrobble", "storage", "plugin", "system"];
-      const randomType = logTypes[Math.floor(Math.random() * logTypes.length)];
-      const timestamp = new Date().toLocaleTimeString();
-      let msg = "";
-      if (randomType === "scrobble") {
-        msg = `Live scrobble active: User sync payload received [ID: ${Math.floor(Math.random()*9000+1000)}]`;
-      } else if (randomType === "storage") {
-        msg = `Redis Hot Tier hit (latency: 1.${Math.floor(Math.random()*9)}ms). Key: user:watchlist:ref_${Math.floor(Math.random()*90)}`;
-      } else if (randomType === "plugin") {
-        msg = `Plugin Movies ping success HTTP 200 OK (22ms)`;
-      } else {
-        msg = `System health heartbeat check complete`;
-      }
-
-      setLogs(prev => [
-        { id: Date.now(), time: timestamp, msg, type: randomType },
-        ...prev.slice(0, 19)
-      ]);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  const handleTestDeviceAuth = async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/v1/auth/device/code`, { method: 'POST' });
-      if (res.ok) {
-        const data = await res.json();
-        setDeviceCode(data);
-      } else {
-        setDeviceCode({
-          user_code: "TRKT-99A1",
-          device_code: "dev_code_mock_8217398127391823",
-          verification_url: "https://trakt.tv/activate",
-          expires_in: 600
-        });
-      }
-    } catch (e) {
-      setDeviceCode({
-        user_code: "TRKT-99A1",
-        device_code: "dev_code_mock_8217398127391823",
-        verification_url: "https://trakt.tv/activate",
-        expires_in: 600
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend-development-8adc.up.railway.app'}/api/v1/auth/device/code`, {
+        method: 'POST'
       });
+      const data = await res.json();
+      setDeviceCodeData(data);
+    } catch (err) {
+      console.error('Device code request failed:', err);
+    } finally {
+      setLoadingAuth(false);
     }
+  };
+
+  const handleRefreshFeed = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-800">
+    <div className="space-y-8 font-sans">
+      {/* Header Banner with Plugin Theme Selector */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-800/80">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <Activity className="w-6 h-6 text-blue-500" />
-            Node Dashboard & Live Scrobble Feed
+          <div className="flex items-center space-x-2 mb-1.5">
+            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold tracking-wide bg-blue-500/10 text-blue-400 border border-blue-500/20">
+              CLUSTER TELEMETRY
+            </span>
+            <span className="text-xs text-slate-400 font-mono">Headless Micro-Kernel v1.2</span>
+          </div>
+          <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <span>Node Dashboard & Scrobble Feed</span>
           </h1>
-          <p className="text-xs text-gray-400 font-mono mt-1">
-            Real-time telemetry, microservice health, and tiered storage cache status
+          <p className="text-sm text-slate-400 mt-1">
+            Real-time microservice status, tiered storage hits, and customizable plugin widgets.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            onClick={fetchData}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-xs font-mono text-gray-200 border border-gray-700 transition-all"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin text-blue-400' : ''}`} />
-            Refresh Telemetry
-          </button>
-          <button
-            onClick={handleTestDeviceAuth}
-            className="flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-red-600/90 hover:bg-red-500 text-xs font-medium text-white shadow-md shadow-red-900/30 transition-all"
-          >
-            <Key className="w-3.5 h-3.5" />
-            Test Device Auth
-          </button>
+
+        {/* Plugin Theme & Customizer Selector */}
+        <div className="flex items-center space-x-2 bg-slate-900/80 p-1.5 rounded-2xl border border-slate-800 backdrop-blur-xl shadow-lg">
+          <span className="text-[11px] font-mono font-semibold text-slate-400 px-3 uppercase tracking-wider hidden sm:inline">
+            Active Theme:
+          </span>
+          <div className="flex space-x-1">
+            {plugins.map(plugin => {
+              const isActive = plugin.id === activePluginId;
+              return (
+                <button
+                  key={plugin.id}
+                  onClick={() => setActivePluginId(plugin.id)}
+                  style={{
+                    backgroundColor: isActive ? plugin.theme.primaryColor : 'transparent',
+                    boxShadow: isActive ? `0 0 15px ${plugin.theme.glowColor}` : 'none'
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold font-mono transition-all flex items-center gap-1.5 ${
+                    isActive ? 'text-white shadow-md' : 'text-slate-400 hover:text-white hover:bg-slate-800/60'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: plugin.theme.primaryColor }} />
+                  <span>{plugin.name.split(' ')[0]}</span>
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
-      {/* Device Auth Modal / Banner */}
-      {deviceCode && (
-        <div className="p-4 rounded-xl bg-blue-950/40 border border-blue-500/40 text-blue-100 flex items-center justify-between shadow-xl">
+      {/* Top Metrics Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+        {/* Metric 1 */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-slate-800">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-2">
+            <span>WARM TIER HITS</span>
+            <Zap className="w-4 h-4 text-blue-400" />
+          </div>
+          <p className="text-3xl font-black text-white font-mono">98.4%</p>
+          <div className="flex items-center justify-between mt-2 text-[11px]">
+            <span className="text-blue-400 font-semibold">Redis Sub-millisecond</span>
+            <span className="text-slate-500 font-mono">&le; 100KB Blobs</span>
+          </div>
+        </div>
+
+        {/* Metric 2 */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-slate-800">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-2">
+            <span>COLD DB PAYLOADS</span>
+            <Layers className="w-4 h-4 text-purple-400" />
+          </div>
+          <p className="text-3xl font-black text-white font-mono">1,420</p>
+          <div className="flex items-center justify-between mt-2 text-[11px]">
+            <span className="text-purple-400 font-semibold">PostgreSQL Blobs</span>
+            <span className="text-slate-500 font-mono">_cold_ref Pointers</span>
+          </div>
+        </div>
+
+        {/* Metric 3 */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-slate-800">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-2">
+            <span>AI MODEL TOKENS</span>
+            <Cpu className="w-4 h-4 text-emerald-400" />
+          </div>
+          <p className="text-3xl font-black text-white font-mono">190.7K</p>
+          <div className="flex items-center justify-between mt-2 text-[11px]">
+            <span className="text-emerald-400 font-semibold">Antigravity CLI</span>
+            <span className="text-slate-500 font-mono">12 Active Sessions</span>
+          </div>
+        </div>
+
+        {/* Metric 4 */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-slate-800">
+          <div className="flex items-center justify-between text-slate-400 text-xs font-mono mb-2">
+            <span>WAKATIME TIME</span>
+            <Flame className="w-4 h-4 text-amber-400" />
+          </div>
+          <p className="text-3xl font-black text-white font-mono">5h 07m</p>
+          <div className="flex items-center justify-between mt-2 text-[11px]">
+            <span className="text-amber-400 font-semibold">Scrobbler Active</span>
+            <span className="text-slate-500 font-mono">Top: Python 52%</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Active Plugin Custom Widget Section */}
+      <div className="glass-panel-glow p-6 rounded-2xl border border-slate-800 relative overflow-hidden">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80 mb-6">
           <div className="flex items-center space-x-3">
-            <ShieldCheck className="w-7 h-7 text-blue-400 flex-shrink-0" />
+            <div
+              className="p-2.5 rounded-xl text-white font-bold"
+              style={{ backgroundColor: activePlugin.theme.primaryColor }}
+            >
+              <Sparkles className="w-5 h-5" />
+            </div>
             <div>
-              <h4 className="font-semibold text-sm text-white">Trakt Device Auth Flow Simulated</h4>
-              <p className="text-xs text-blue-300 font-mono mt-0.5">
-                User Code: <strong className="text-emerald-400 bg-emerald-950 px-2 py-0.5 rounded border border-emerald-500/30">{deviceCode.user_code}</strong> | URL: {deviceCode.verification_url}
-              </p>
+              <div className="flex items-center space-x-2">
+                <h2 className="text-lg font-bold text-white tracking-wide">{activePlugin.widget.title}</h2>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-semibold ${activePlugin.theme.badgeBg}`}>
+                  {activePlugin.name}
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-0.5">{activePlugin.widget.subtitle}</p>
             </div>
           </div>
-          <button
-            onClick={() => setDeviceCode(null)}
-            className="text-xs text-gray-400 hover:text-white underline font-mono"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
 
-      {/* Top 4 System Health Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Core Gateway */}
-        <div className="glass-card p-4 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Gateway Core</span>
-            <Server className="w-4 h-4 text-blue-400" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white font-mono">ONLINE</span>
-            <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-              HTTP :8000
-            </span>
-          </div>
-          <div className="mt-3 text-[11px] text-gray-400 font-mono flex justify-between border-t border-gray-800/80 pt-2">
-            <span>Uptime: {status?.uptime ? `${Math.round(status.uptime)}s` : '1420s'}</span>
-            <span className="text-blue-400">FastAPI Gateway</span>
+          <div className="flex items-center space-x-3">
+            <div className="text-right font-mono">
+              <p className="text-sm font-bold text-white">{activePlugin.widget.metricValue}</p>
+              <p className="text-[10px] text-slate-400">{activePlugin.widget.metricLabel}</p>
+            </div>
+            <button
+              onClick={handleRefreshFeed}
+              className="p-2 rounded-xl bg-slate-800/80 text-slate-300 hover:text-white border border-slate-700 hover:border-slate-600 transition-all"
+            >
+              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`} />
+            </button>
           </div>
         </div>
 
-        {/* Redis Hot Tier */}
-        <div className="glass-card p-4 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Redis Hot Tier</span>
-            <Zap className="w-4 h-4 text-amber-400" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white font-mono">
-              {status?.storage_engine?.redis === 'connected' ? 'CONNECTED' : 'IN-MEMORY'}
-            </span>
-            <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded bg-amber-950 text-amber-400 border border-amber-500/30">
-              LRU 256MB
-            </span>
-          </div>
-          <div className="mt-3 text-[11px] text-gray-400 font-mono flex justify-between border-t border-gray-800/80 pt-2">
-            <span>Hits: {status?.storage_engine?.stats?.hot_hits || 128}</span>
-            <span>Objects &lt; 100KB</span>
-          </div>
-        </div>
+        {/* Plugin Custom Card Items */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {activePlugin.widget.items.map(item => (
+            <div
+              key={item.id}
+              className="bg-slate-900/60 p-4 rounded-xl border border-slate-800/80 hover:border-slate-700 transition-all flex flex-col justify-between space-y-3 group"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700/60">
+                    {item.tag}
+                  </span>
+                  {item.rating && (
+                    <span className="text-xs font-semibold font-mono text-amber-400">
+                      ★ {item.rating}
+                    </span>
+                  )}
+                </div>
+                <h3 className="font-semibold text-white group-hover:text-blue-400 transition-colors line-clamp-1">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-slate-400 mt-1 line-clamp-1 font-mono">{item.subtitle}</p>
+              </div>
 
-        {/* Postgres Cold Tier */}
-        <div className="glass-card p-4 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Postgres Cold Storage</span>
-            <Database className="w-4 h-4 text-emerald-400" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white font-mono">
-              {status?.storage_engine?.postgres === 'connected' ? 'CONNECTED' : 'FALLBACK'}
-            </span>
-            <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 border border-emerald-500/30">
-              JSONB Tier
-            </span>
-          </div>
-          <div className="mt-3 text-[11px] text-gray-400 font-mono flex justify-between border-t border-gray-800/80 pt-2">
-            <span>Pointers: _cold_ref</span>
-            <span>Objects &gt; 100KB</span>
-          </div>
-        </div>
-
-        {/* Plugin Microservice */}
-        <div className="glass-card p-4 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Plugin Microservice</span>
-            <Cpu className="w-4 h-4 text-purple-400" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-xl font-bold text-white font-mono uppercase">
-              {status?.plugins?.movies?.status || 'ONLINE'}
-            </span>
-            <span className="inline-flex items-center text-[10px] font-mono px-2 py-0.5 rounded bg-purple-950 text-purple-400 border border-purple-500/30">
-              :8001 (Movies)
-            </span>
-          </div>
-          <div className="mt-3 text-[11px] text-gray-400 font-mono flex justify-between border-t border-gray-800/80 pt-2">
-            <span>Route: /up-next</span>
-            <span className="text-emerald-400">Synced</span>
-          </div>
+              {item.progress !== undefined && (
+                <div className="space-y-1">
+                  <div className="flex justify-between text-[10px] text-slate-400 font-mono">
+                    <span>Progress</span>
+                    <span>{item.progress}%</span>
+                  </div>
+                  <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
+                    <div
+                      className="h-full rounded-full transition-all duration-500"
+                      style={{
+                        width: `${item.progress}%`,
+                        backgroundColor: activePlugin.theme.primaryColor
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Main Grid: Up Next Watchlist & Live Scrobble Terminal */}
+      {/* Main Grid: Device Auth Testing + Live Scrobble Stream */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Up-Next Watchlist Column (2 cols) */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Play className="w-4 h-4 text-red-500 fill-red-500" />
-              User Up-Next Stream (Proxied via Plugin Microservice)
-            </h2>
-            <span className="text-xs font-mono text-gray-400">{upNextList.length} items loaded</span>
+        {/* Column 1: Headless Node Device Auth Tool */}
+        <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-5">
+          <div className="flex items-center space-x-2 text-slate-200">
+            <ShieldCheck className="w-5 h-5 text-emerald-400" />
+            <h2 className="font-bold text-base">Headless Node Device Auth</h2>
           </div>
+          <p className="text-xs text-slate-400 leading-relaxed">
+            Test the Trakt OAuth Device Code Flow used by Android Background Scrobblers and headless CLI clients.
+          </p>
 
-          <div className="space-y-3">
-            {upNextList.map((item) => (
-              <div
-                key={item.id}
-                className="glass-card glass-card-hover p-4 rounded-xl border border-gray-800/80 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4"
-              >
-                <div className="flex items-center space-x-4">
-                  <div className="h-16 w-12 rounded-md overflow-hidden bg-gray-800 flex-shrink-0 border border-gray-700 relative">
-                    {/* eslint-disable-next-html-link */}
-                    <img src={item.poster} alt={item.title} className="w-full h-full object-cover" />
-                  </div>
-                  <div>
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-bold text-base text-white hover:text-blue-400 cursor-pointer transition-colors">
-                        {item.title}
-                      </h3>
-                      <span className="text-xs text-gray-400 font-mono">({item.year})</span>
-                      <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
-                        item.type === 'movie' 
-                          ? 'bg-blue-950 text-blue-400 border border-blue-500/30' 
-                          : 'bg-purple-950 text-purple-400 border border-purple-500/30'
-                      }`}>
-                        {item.type.toUpperCase()}
-                      </span>
-                    </div>
+          <button
+            onClick={handleRequestDeviceCode}
+            disabled={loadingAuth}
+            className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-semibold text-xs hover:from-blue-500 hover:to-indigo-500 transition-all shadow-lg shadow-blue-600/20 flex items-center justify-center space-x-2"
+          >
+            <Radio className="w-4 h-4" />
+            <span>{loadingAuth ? 'Requesting Device Code...' : 'Request OAuth Device Code'}</span>
+          </button>
 
-                    {item.next_episode ? (
-                      <p className="text-xs text-emerald-400 font-mono mt-1 flex items-center gap-1">
-                        <span>Next: S{item.next_episode.season} E{item.next_episode.number} - &quot;{item.next_episode.title}&quot;</span>
-                      </p>
-                    ) : (
-                      <p className="text-xs text-gray-400 font-mono mt-1">
-                        Runtime: {item.runtime_min} mins
-                      </p>
-                    )}
-
-                    <div className="flex items-center space-x-2 mt-2">
-                      {item.genre.map((g) => (
-                        <span key={g} className="text-[10px] font-mono text-gray-400 bg-gray-900 px-2 py-0.5 rounded border border-gray-800">
-                          {g}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="w-full sm:w-auto flex flex-col items-end gap-2">
-                  <div className="flex items-center space-x-2 font-mono text-xs text-amber-400 font-bold bg-amber-950/40 px-2.5 py-1 rounded border border-amber-500/30">
-                    <span>★ {item.rating}</span>
-                  </div>
-                  {item.progress_pct > 0 && (
-                    <div className="w-full sm:w-32 text-right">
-                      <div className="text-[10px] text-gray-400 font-mono mb-1">{item.progress_pct}% watched</div>
-                      <div className="w-full bg-gray-800 h-1.5 rounded-full overflow-hidden">
-                        <div className="bg-red-500 h-full" style={{ width: `${item.progress_pct}%` }} />
-                      </div>
-                    </div>
-                  )}
-                </div>
+          {deviceCodeData && (
+            <div className="p-4 rounded-xl bg-slate-900/90 border border-slate-800 space-y-3 text-xs font-mono">
+              <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+                <span className="text-slate-400">USER CODE:</span>
+                <span className="text-emerald-400 font-extrabold text-sm tracking-wider bg-emerald-950/80 px-2 py-0.5 rounded border border-emerald-500/30">
+                  {deviceCodeData.user_code}
+                </span>
               </div>
-            ))}
-          </div>
+              <div className="space-y-1">
+                <span className="text-slate-400 text-[10px]">VERIFICATION URL:</span>
+                <a
+                  href={deviceCodeData.verification_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-blue-400 hover:underline flex items-center space-x-1 text-[11px] truncate"
+                >
+                  <span>{deviceCodeData.verification_url}</span>
+                  <ArrowUpRight className="w-3 h-3 flex-shrink-0" />
+                </a>
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Live Activity Log Console (1 col) */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Activity className="w-4 h-4 text-emerald-400" />
-              Live Telemetry Stream
-            </h2>
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+        {/* Column 2 & 3: Live System Scrobble Stream */}
+        <div className="lg:col-span-2 glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <div className="flex items-center space-x-2 text-slate-200">
+              <Activity className="w-5 h-5 text-blue-400" />
+              <h2 className="font-bold text-base">Live Ecosystem Telemetry Log</h2>
+            </div>
+            <span className="text-[11px] font-mono text-emerald-400 bg-emerald-950/60 px-2 py-0.5 rounded border border-emerald-500/20">
+              ● Streaming
             </span>
           </div>
 
-          <div className="terminal-box rounded-xl p-3 h-[420px] overflow-y-auto space-y-2 text-xs">
-            {logs.map((log) => (
-              <div key={log.id} className="font-mono text-[11px] leading-relaxed border-b border-gray-900 pb-1.5">
-                <span className="text-gray-500 mr-2">[{log.time}]</span>
-                <span className={`mr-2 font-bold px-1.5 py-0.2 rounded text-[9px] ${
-                  log.type === 'scrobble' ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' :
-                  log.type === 'storage' ? 'bg-amber-950 text-amber-400 border border-amber-800' :
-                  log.type === 'plugin' ? 'bg-purple-950 text-purple-400 border border-purple-800' :
-                  'bg-blue-950 text-blue-400 border border-blue-800'
-                }`}>
-                  {log.type.toUpperCase()}
-                </span>
-                <span className="text-gray-300">{log.msg}</span>
+          <div className="space-y-2.5 font-mono text-xs max-h-72 overflow-y-auto pr-1">
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-slate-300">
+              <div className="flex items-center space-x-3">
+                <span className="text-blue-400">[00:38:55]</span>
+                <span className="text-emerald-400">POST /api/v1/telemetry/token</span>
+                <span className="text-slate-400 text-[11px]">Antigravity CLI • +1,850 tokens</span>
               </div>
-            ))}
+              <span className="text-slate-500 text-[10px]">200 OK</span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-slate-300">
+              <div className="flex items-center space-x-3">
+                <span className="text-blue-400">[00:38:10]</span>
+                <span className="text-purple-400">GET /api/v1/user/up-next</span>
+                <span className="text-slate-400 text-[11px]">Movies Microservice Proxy</span>
+              </div>
+              <span className="text-slate-500 text-[10px]">200 OK</span>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950/80 border border-slate-800/80 flex items-center justify-between text-slate-300">
+              <div className="flex items-center space-x-3">
+                <span className="text-blue-400">[00:37:34]</span>
+                <span className="text-amber-400">SET TieredStorageEngine</span>
+                <span className="text-slate-400 text-[11px]">Key: user:up_next_feed (Warm Cache Hit)</span>
+              </div>
+              <span className="text-slate-500 text-[10px]">Redis 0.4ms</span>
+            </div>
           </div>
         </div>
       </div>
