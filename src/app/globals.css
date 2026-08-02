@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg-color: #0A0C10;
+  --surface-color: #12161F;
+  --border-color: #1F2937;
+  --text-main: #F3F4F6;
+}
+
+body {
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Custom dark scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0A0C10;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1F2937;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* Glassmorphism utility card class */
+.glass-card {
+  background: rgba(18, 22, 31, 0.75);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+}
+
+.glass-card-hover {
+  transition: all 0.2s ease-in-out;
+}
+
+.glass-card-hover:hover {
+  border-color: rgba(59, 130, 246, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px 0 rgba(59, 130, 246, 0.1);
+}
+
+.terminal-box {
+  background: #080A0E;
+  border: 1px solid #1E2430;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.glowing-badge-green {
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+}
+
+.glowing-badge-red {
+  box-shadow: 0 0 10px rgba(229, 9, 20, 0.3);
+}
