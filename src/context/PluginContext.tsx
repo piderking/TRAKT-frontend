@@ -154,6 +154,37 @@ const DEFAULT_PLUGINS: PluginManifest[] = [
         { id: 'h3', title: 'Sleep & SpO2 Recovery', subtitle: '7.8 hrs Sleep • 99% SpO2', tag: 'Recovery', progress: 99 }
       ]
     }
+  },
+  {
+    id: 'letterboxd',
+    name: 'Letterboxd Export Zip Importer',
+    description: 'Imports and parses Letterboxd export.zip files containing watched, ratings, diary, and watchlist CSVs.',
+    version: '1.0.0',
+    author: 'Trakt Data Migration',
+    category: 'movies',
+    endpointUrl: '/api/v1/import/letterboxd/summary',
+    uiEndpointUrl: '/static/plugins/letterboxd/ui',
+    enabled: true,
+    isCustomizable: true,
+    pingMs: 10,
+    theme: {
+      primaryColor: '#FF8000',
+      glowColor: 'rgba(255, 128, 0, 0.35)',
+      gradient: 'from-amber-600 to-emerald-500',
+      badgeBg: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
+      cardBorder: 'hover:border-amber-500/50'
+    },
+    widget: {
+      title: 'LETTERBOXD ZIP MIGRATION ENGINE',
+      subtitle: 'Data Export Importer',
+      metricValue: '428 Movies',
+      metricLabel: '312 Ratings Converted',
+      items: [
+        { id: 'lb1', title: 'Watched Movies Export', subtitle: '428 Entries parsed from watched.csv', tag: 'Watched', progress: 100 },
+        { id: 'lb2', title: 'Ratings & Reviews', subtitle: '312 Star Ratings mapped to Trakt 10-scale', tag: 'Ratings', progress: 100 },
+        { id: 'lb3', title: 'Diary & Watchlist', subtitle: '185 Diary Logs • 94 Watchlist Items', tag: 'Lists', progress: 100 }
+      ]
+    }
   }
 ];
 

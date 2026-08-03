@@ -19,7 +19,9 @@ import {
   Server, 
   Terminal,
   Save,
-  Globe
+  Globe,
+  UploadCloud,
+  FileArchive
 } from 'lucide-react';
 
 interface OAuthClientData {
@@ -36,6 +38,7 @@ export default function PluginsTopologyPage() {
   const [flushingCache, setFlushingCache] = useState(false);
   const [savingConfig, setSavingConfig] = useState(false);
   const [configSaved, setConfigSaved] = useState(false);
+  const [originUrl, setOriginUrl] = useState('https://backend-development-8adc.up.railway.app');
 
   // Plugin Credentials State
   const [wakaApiKey, setWakaApiKey] = useState('waka_sec_demo_key_99812');
@@ -43,13 +46,18 @@ export default function PluginsTopologyPage() {
   const [traktClientSecret, setTraktClientSecret] = useState('demo_trakt_secret_9981');
   const [healthSyncToken, setHealthSyncToken] = useState('hc_token_demo_3341');
 
+  // Letterboxd Zip Importer State
+  const [lbFile, setLbFile] = useState<File | null>(null);
+  const [uploadingLb, setUploadingLb] = useState(false);
+  const [lbResult, setLbResult] = useState<string | null>(null);
+
   // OAuth Server State
   const [oauthClients, setOauthClients] = useState<OAuthClientData[]>([
     {
       client_id: 'android_daemon_default',
       client_secret: 'sec_8f99a1b2c3d4e5f6',
       client_name: 'Trakt Android Daemon',
-      redirect_uris: ['https://trakt.tv/activate', 'trakt://oauth/callback'],
+      redirect_uris: ['https://backend-development-8adc.up.railway.app/activate', 'https://backend-development-8adc.up.railway.app/oauth/callback'],
       scopes: ['read', 'write', 'scrobble', 'health']
     }
   ]);
@@ -58,6 +66,20 @@ export default function PluginsTopologyPage() {
   const [registeringClient, setRegisteringClient] = useState(false);
 
   const selectedPlugin = plugins.find(p => p.id === selectedPluginId) || plugins[0];
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const host = process.env.NEXT_PUBLIC_API_URL || 'https://backend-development-8adc.up.railway.app';
+      setOriginUrl(host);
+      setOauthClients(prev =>
+        prev.map(c =>
+          c.client_id === 'android_daemon_default'
+            ? { ...c, redirect_uris: [`${host}/activate`, `${host}/oauth/callback`] }
+            : c
+        )
+      );
+    }
+  }, []);
 
   const handleColorChange = (newColor: string) => {
     updatePluginTheme(selectedPluginId, {
@@ -83,7 +105,7 @@ export default function PluginsTopologyPage() {
         configPayload = { health_connect_sync_token: healthSyncToken };
       }
 
-      await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend-development-8adc.up.railway.app'}/api/v1/plugins/config?plugin_id=${selectedPluginId}`, {
+      await fetch(`${originUrl}/api/v1/plugins/config?plugin_id=${selectedPluginId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configPayload)
@@ -98,12 +120,36 @@ export default function PluginsTopologyPage() {
     }
   };
 
+  const handleLetterboxdZipUpload = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!lbFile) return;
+    setUploadingLb(true);
+    setLbResult(null);
+
+    const formData = new FormData();
+    formData.append('file', lbFile);
+
+    try {
+      const res = await fetch(`${originUrl}/api/v1/import/letterboxd`, {
+        method: 'POST',
+        body: formData
+      });
+      const data = await res.json();
+      setLbResult(`Import Success! Watched: ${data.imported_counts?.watched || 0}, Ratings: ${data.imported_counts?.ratings || 0}`);
+    } catch (err) {
+      console.error('Letterboxd upload failed:', err);
+      setLbResult('Upload failed. Please ensure the file is a valid Letterboxd export zip.');
+    } finally {
+      setUploadingLb(false);
+    }
+  };
+
   const handleRegisterOAuthClient = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newClientName || !newRedirectUri) return;
     setRegisteringClient(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'https://backend-development-8adc.up.railway.app'}/oauth/clients/register`, {
+      const res = await fetch(`${originUrl}/oauth/clients/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -137,7 +183,7 @@ export default function PluginsTopologyPage() {
             <span>Plugin Configuration & OAuth Manager</span>
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Configure WakaTime API tokens, client secrets, theme accents, and OAuth 2.0 authorization servers.
+            Configure WakaTime API tokens, Letterboxd zip export importers, theme accents, and OAuth 2.0 authorization servers.
           </p>
         </div>
 
@@ -215,14 +261,16 @@ export default function PluginsTopologyPage() {
                 </div>
               </div>
 
-              <button
-                onClick={handleSavePluginConfig}
-                disabled={savingConfig}
-                className="px-4 py-2 rounded-xl text-xs font-mono font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg shadow-purple-600/20 flex items-center space-x-1.5 transition-all hover:from-purple-500 hover:to-indigo-500"
-              >
-                <Save className="w-3.5 h-3.5" />
-                <span>{configSaved ? 'Saved to Gateway!' : savingConfig ? 'Saving...' : 'Save Configuration'}</span>
-              </button>
+              {selectedPluginId !== 'letterboxd' && (
+                <button
+                  onClick={handleSavePluginConfig}
+                  disabled={savingConfig}
+                  className="px-4 py-2 rounded-xl text-xs font-mono font-semibold text-white bg-gradient-to-r from-purple-600 to-indigo-600 shadow-lg shadow-purple-600/20 flex items-center space-x-1.5 transition-all hover:from-purple-500 hover:to-indigo-500"
+                >
+                  <Save className="w-3.5 h-3.5" />
+                  <span>{configSaved ? 'Saved to Gateway!' : savingConfig ? 'Saving...' : 'Save Configuration'}</span>
+                </button>
+              )}
             </div>
 
             {/* Plugin Specific Credentials Forms */}
@@ -245,6 +293,40 @@ export default function PluginsTopologyPage() {
                   </p>
                 </div>
               </div>
+            )}
+
+            {selectedPluginId === 'letterboxd' && (
+              <form onSubmit={handleLetterboxdZipUpload} className="space-y-4 text-xs font-mono">
+                <div className="p-5 rounded-2xl bg-slate-950 border border-amber-500/30 text-center space-y-3">
+                  <FileArchive className="w-8 h-8 text-amber-400 mx-auto" />
+                  <div>
+                    <h4 className="font-bold text-white text-sm">Upload Letterboxd Data Export Zip</h4>
+                    <p className="text-slate-400 text-[11px] mt-0.5">
+                      Supports <code>watched.csv</code>, <code>ratings.csv</code>, <code>diary.csv</code>, & <code>watchlist.csv</code>
+                    </p>
+                  </div>
+
+                  <input
+                    type="file"
+                    accept=".zip,.csv"
+                    onChange={e => setLbFile(e.target.files ? e.target.files[0] : null)}
+                    className="block w-full text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-amber-500/20 file:text-amber-400 hover:file:bg-amber-500/30 cursor-pointer"
+                  />
+
+                  <button
+                    type="submit"
+                    disabled={uploadingLb || !lbFile}
+                    className="w-full py-2.5 rounded-xl bg-gradient-to-r from-amber-600 to-emerald-600 text-white font-bold text-xs shadow-lg shadow-amber-600/20 flex items-center justify-center space-x-2"
+                  >
+                    <UploadCloud className="w-4 h-4" />
+                    <span>{uploadingLb ? 'Parsing Zip Export...' : 'Import Letterboxd Zip Archive'}</span>
+                  </button>
+
+                  {lbResult && (
+                    <p className="text-emerald-400 font-bold text-xs pt-1">{lbResult}</p>
+                  )}
+                </div>
+              </form>
             )}
 
             {selectedPluginId === 'movies' && (
@@ -290,7 +372,7 @@ export default function PluginsTopologyPage() {
                 Primary Theme Accent:
               </span>
               <div className="flex gap-2.5 items-center">
-                {['#8B5CF6', '#3B82F6', '#EC4899', '#10B981', '#EF4444', '#F59E0B'].map(color => (
+                {['#8B5CF6', '#FF8000', '#3B82F6', '#EC4899', '#10B981', '#EF4444'].map(color => (
                   <button
                     key={color}
                     onClick={() => handleColorChange(color)}
@@ -323,19 +405,19 @@ export default function PluginsTopologyPage() {
           </span>
         </div>
 
-        {/* OAuth Endpoints Reference Banner */}
+        {/* Dynamic OAuth Endpoints Reference Banner */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 font-mono text-xs">
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1">
             <span className="text-[10px] text-slate-500">AUTHORIZATION ENDPOINT</span>
-            <p className="text-blue-400 font-semibold truncate">/oauth/authorize/code</p>
+            <p className="text-blue-400 font-semibold truncate">{originUrl}/oauth/authorize/code</p>
           </div>
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1">
             <span className="text-[10px] text-slate-500">TOKEN ISSUANCE ENDPOINT</span>
-            <p className="text-emerald-400 font-semibold truncate">/oauth/token</p>
+            <p className="text-emerald-400 font-semibold truncate">{originUrl}/oauth/token</p>
           </div>
           <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/80 space-y-1">
             <span className="text-[10px] text-slate-500">USERINFO & VALIDATION</span>
-            <p className="text-purple-400 font-semibold truncate">/oauth/userinfo</p>
+            <p className="text-purple-400 font-semibold truncate">{originUrl}/oauth/userinfo</p>
           </div>
         </div>
 
@@ -363,7 +445,7 @@ export default function PluginsTopologyPage() {
                 type="text"
                 value={newRedirectUri}
                 onChange={e => setNewRedirectUri(e.target.value)}
-                placeholder="https://myapp.com/oauth/callback"
+                placeholder={`${originUrl}/oauth/callback`}
                 className="w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
               />
             </div>
@@ -393,7 +475,9 @@ export default function PluginsTopologyPage() {
                       CLIENT ID: {c.client_id}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-400 mt-1">Redirect URIs: {c.redirect_uris.join(', ')}</p>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Redirect URIs: <span className="text-emerald-400 font-semibold">{c.redirect_uris.join(', ')}</span>
+                  </p>
                 </div>
                 <div className="text-right">
                   <span className="text-[10px] text-slate-500 block">CLIENT SECRET</span>
