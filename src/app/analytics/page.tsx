@@ -1,265 +1,135 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   BarChart3, 
-  Clock, 
   Film, 
-  Tv, 
-  Star, 
-  TrendingUp, 
-  Calendar, 
-  PieChart as PieIcon, 
-  Filter 
+  Code2, 
+  Heart, 
+  Music, 
+  Database, 
+  Cpu, 
+  Flame, 
+  Activity, 
+  Moon, 
+  Sparkles,
+  Zap,
+  Layers,
+  Repeat
 } from 'lucide-react';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  Cell
-} from 'recharts';
-
-const watchTimeData = [
-  { month: 'Jan', moviesHours: 42, showHours: 68, total: 110 },
-  { month: 'Feb', moviesHours: 35, showHours: 72, total: 107 },
-  { month: 'Mar', moviesHours: 50, showHours: 85, total: 135 },
-  { month: 'Apr', moviesHours: 45, showHours: 90, total: 135 },
-  { month: 'May', moviesHours: 60, showHours: 110, total: 170 },
-  { month: 'Jun', moviesHours: 55, showHours: 95, total: 150 },
-  { month: 'Jul', moviesHours: 68, showHours: 120, total: 188 },
-];
-
-const genreData = [
-  { name: 'Sci-Fi', count: 184, color: '#3B82F6' },
-  { name: 'Drama', count: 142, color: '#8B5CF6' },
-  { name: 'Action', count: 110, color: '#E50914' },
-  { name: 'Comedy', count: 95, color: '#10B981' },
-  { name: 'Thriller', count: 78, color: '#F59E0B' },
-  { name: 'Animation', count: 52, color: '#EC4899' },
-];
-
-const activityHeatmap = Array.from({ length: 28 }, (_, i) => ({
-  day: i + 1,
-  intensity: Math.floor(Math.random() * 5)
-}));
 
 export default function AnalyticsPage() {
-  const [timeframe, setTimeframe] = useState<'7d' | '30d' | '1y'>('1y');
+  const [data, setData] = useState<any>({
+    movies: { total_logged: 428, rewatches: 112, liked: 310, avg_rating: 8.6 },
+    tokens: { total_tokens: 190700, prompt: 142500, completion: 48200, sessions: 12 },
+    wakatime: { coding_hours: "5h 7m", active_project: "TRAKT", python_pct: 52.4, ts_pct: 38.1 },
+    health: { bpm: 74, resting_bpm: 58, steps: 8840, calories: 465, sleep_hrs: 7.8, spo2: 99.0 },
+    spotify: { tracks_today: 34, listening_mins: 118, tempo_bpm: 186, energy_pct: 82 },
+    storage: { warm_hit_rate: 98.4, cold_blobs: 1420, redis_latency_ms: 0.4 }
+  });
 
   return (
-    <div className="space-y-6">
-      {/* Header Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-gray-800">
-        <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-2">
-            <BarChart3 className="w-6 h-6 text-purple-400" />
-            Analytics & Viewing Intelligence
-          </h1>
-          <p className="text-xs text-gray-400 font-mono mt-1">
-            Aggregated scrobble metrics, watch patterns, and genre breakdown
-          </p>
+    <div className="space-y-8 font-sans">
+      {/* Header */}
+      <div className="pb-6 border-b border-slate-800">
+        <div className="flex items-center space-x-2 mb-1.5">
+          <span className="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-semibold bg-purple-500/10 text-purple-400 border border-purple-500/20">
+            ALL-FIELDS UNIFIED ANALYTICS ENGINE
+          </span>
         </div>
-        <div className="flex items-center space-x-1 bg-gray-900 p-1 rounded-lg border border-gray-800 font-mono text-xs">
-          {(['7d', '30d', '1y'] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTimeframe(t)}
-              className={`px-3 py-1.5 rounded-md transition-all ${
-                timeframe === t 
-                  ? 'bg-purple-600 text-white font-bold shadow-md shadow-purple-900/40' 
-                  : 'text-gray-400 hover:text-white'
-              }`}
-            >
-              {t.toUpperCase()}
-            </button>
-          ))}
-        </div>
+        <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <BarChart3 className="w-8 h-8 text-purple-400" />
+          <span>Cross-Domain Ecosystem Analytics</span>
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Comprehensive real-time telemetry across Movies, WakaTime, Antigravity AI Tokens, Health Vitals, Spotify Music, and Tiered Storage.
+        </p>
       </div>
 
-      {/* Top 4 Stat Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: Total Watch Time */}
-        <div className="glass-card p-5 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Total Watch Time</span>
-            <Clock className="w-5 h-5 text-blue-400" />
+      {/* Domain Breakdown Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+        {/* Domain 1: Movies */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-blue-500/30">
+          <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+            <span>MOVIES & DIARY</span>
+            <Film className="w-4 h-4 text-blue-400" />
           </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-white font-mono">995 hrs</span>
-            <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" /> +14.2%
-            </span>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-2 font-mono">Equivalent to 41.4 days of media</p>
-        </div>
-
-        {/* Card 2: Movies Finished */}
-        <div className="glass-card p-5 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Movies Completed</span>
-            <Film className="w-5 h-5 text-red-500" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-white font-mono">142</span>
-            <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" /> +8.5%
-            </span>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-2 font-mono">Avg runtime: 114 mins / movie</p>
-        </div>
-
-        {/* Card 3: Episodes Scrobbled */}
-        <div className="glass-card p-5 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Episodes Scrobbled</span>
-            <Tv className="w-5 h-5 text-purple-400" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-white font-mono">1,280</span>
-            <span className="text-xs font-mono text-emerald-400 flex items-center gap-1">
-              <TrendingUp className="w-3.5 h-3.5" /> +21.0%
-            </span>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-2 font-mono">48 active TV series tracked</p>
-        </div>
-
-        {/* Card 4: Mean User Rating */}
-        <div className="glass-card p-5 rounded-xl border border-gray-800 relative overflow-hidden">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-mono text-gray-400 uppercase tracking-wider">Mean User Rating</span>
-            <Star className="w-5 h-5 text-amber-400 fill-amber-400/20" />
-          </div>
-          <div className="mt-3 flex items-baseline justify-between">
-            <span className="text-2xl font-bold text-white font-mono">8.4 / 10</span>
-            <span className="text-xs font-mono text-amber-400">★ Top 10%</span>
-          </div>
-          <p className="text-[11px] text-gray-400 mt-2 font-mono">Based on 310 explicit ratings</p>
-        </div>
-      </div>
-
-      {/* Main Charts Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Watch Time Trend Area Chart (2 cols) */}
-        <div className="lg:col-span-2 glass-card p-6 rounded-xl border border-gray-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-white">Monthly Watch Volume (Hours)</h2>
-              <p className="text-xs text-gray-400 font-mono">Breakdown between Movies and TV Shows</p>
-            </div>
-            <div className="flex items-center space-x-4 text-xs font-mono">
-              <span className="flex items-center space-x-1.5">
-                <span className="w-3 h-3 rounded-full bg-blue-500 inline-block" />
-                <span className="text-gray-300">TV Shows</span>
-              </span>
-              <span className="flex items-center space-x-1.5">
-                <span className="w-3 h-3 rounded-full bg-red-500 inline-block" />
-                <span className="text-gray-300">Movies</span>
-              </span>
-            </div>
-          </div>
-
-          <div className="h-72 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={watchTimeData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <defs>
-                  <linearGradient id="colorShows" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0}/>
-                  </linearGradient>
-                  <linearGradient id="colorMovies" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#E50914" stopOpacity={0.4}/>
-                    <stop offset="95%" stopColor="#E50914" stopOpacity={0.0}/>
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" vertical={false} />
-                <XAxis dataKey="month" stroke="#6B7280" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <YAxis stroke="#6B7280" tick={{ fill: '#9CA3AF', fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#12161F', borderColor: '#1F2937', borderRadius: '8px', color: '#FFF' }}
-                  labelStyle={{ color: '#9CA3AF', fontWeight: 'bold' }}
-                />
-                <Area type="monotone" dataKey="showHours" name="TV Shows (hrs)" stroke="#3B82F6" fillOpacity={1} fill="url(#colorShows)" strokeWidth={2} />
-                <Area type="monotone" dataKey="moviesHours" name="Movies (hrs)" stroke="#E50914" fillOpacity={1} fill="url(#colorMovies)" strokeWidth={2} />
-              </AreaChart>
-            </ResponsiveContainer>
+          <p className="text-3xl font-extrabold text-white">{data.movies.total_logged}</p>
+          <div className="text-[11px] space-y-1 text-slate-400 mt-3 pt-2 border-t border-slate-800">
+            <div className="flex justify-between"><span>Rewatches:</span><span className="text-blue-400 font-bold">{data.movies.rewatches}</span></div>
+            <div className="flex justify-between"><span>Liked Movies:</span><span className="text-pink-400 font-bold">{data.movies.liked}</span></div>
+            <div className="flex justify-between"><span>Avg Rating:</span><span className="text-amber-400 font-bold">★ {data.movies.avg_rating}</span></div>
           </div>
         </div>
 
-        {/* Genre Breakdown Bar Chart (1 col) */}
-        <div className="glass-card p-6 rounded-xl border border-gray-800 space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-white">Top Genre Affinity</h2>
-              <p className="text-xs text-gray-400 font-mono">Title count distribution</p>
-            </div>
-            <PieIcon className="w-4 h-4 text-purple-400" />
+        {/* Domain 2: AI Tokens & WakaTime */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-purple-500/30">
+          <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+            <span>AI TOKENS & CODING</span>
+            <Code2 className="w-4 h-4 text-purple-400" />
           </div>
+          <p className="text-3xl font-extrabold text-white">{(data.tokens.total_tokens / 1000).toFixed(1)}k</p>
+          <div className="text-[11px] space-y-1 text-slate-400 mt-3 pt-2 border-t border-slate-800">
+            <div className="flex justify-between"><span>Coding Time:</span><span className="text-emerald-400 font-bold">{data.wakatime.coding_hours}</span></div>
+            <div className="flex justify-between"><span>Prompt Tokens:</span><span className="text-purple-400 font-bold">{(data.tokens.prompt / 1000).toFixed(1)}k</span></div>
+            <div className="flex justify-between"><span>Top Language:</span><span className="text-emerald-400 font-bold">Python ({data.wakatime.python_pct}%)</span></div>
+          </div>
+        </div>
 
-          <div className="h-72 w-full pt-2">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={genreData} layout="vertical" margin={{ top: 5, right: 10, left: 10, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1F2937" horizontal={false} />
-                <XAxis type="number" stroke="#6B7280" tick={{ fill: '#9CA3AF', fontSize: 10 }} />
-                <YAxis dataKey="name" type="category" stroke="#6B7280" tick={{ fill: '#D1D5DB', fontSize: 11 }} width={65} />
-                <Tooltip
-                  contentStyle={{ backgroundColor: '#12161F', borderColor: '#1F2937', borderRadius: '8px', color: '#FFF' }}
-                />
-                <Bar dataKey="count" radius={[0, 4, 4, 0]}>
-                  {genreData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+        {/* Domain 3: Health Vitals */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-red-500/30">
+          <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+            <span>HEALTH & VITALS</span>
+            <Heart className="w-4 h-4 text-red-500 fill-red-500" />
+          </div>
+          <p className="text-3xl font-extrabold text-white">{data.health.bpm} <span className="text-xs text-slate-400">BPM</span></p>
+          <div className="text-[11px] space-y-1 text-slate-400 mt-3 pt-2 border-t border-slate-800">
+            <div className="flex justify-between"><span>Resting HR:</span><span className="text-red-400 font-bold">{data.health.resting_bpm} BPM</span></div>
+            <div className="flex justify-between"><span>Daily Steps:</span><span className="text-emerald-400 font-bold">{data.health.steps.toLocaleString()}</span></div>
+            <div className="flex justify-between"><span>Sleep / SpO2:</span><span className="text-purple-400 font-bold">{data.health.sleep_hrs}h / {data.health.spo2}%</span></div>
+          </div>
+        </div>
+
+        {/* Domain 4: Spotify Music */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-emerald-500/30">
+          <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+            <span>SPOTIFY MUSIC</span>
+            <Music className="w-4 h-4 text-emerald-400" />
+          </div>
+          <p className="text-3xl font-extrabold text-white">{data.spotify.tracks_today} <span className="text-xs text-slate-400">tracks</span></p>
+          <div className="text-[11px] space-y-1 text-slate-400 mt-3 pt-2 border-t border-slate-800">
+            <div className="flex justify-between"><span>Listening Mins:</span><span className="text-emerald-400 font-bold">{data.spotify.listening_mins}m</span></div>
+            <div className="flex justify-between"><span>Tempo (BPM):</span><span className="text-purple-400 font-bold">{data.spotify.tempo_bpm}</span></div>
+            <div className="flex justify-between"><span>Energy Level:</span><span className="text-amber-400 font-bold">{data.spotify.energy_pct}%</span></div>
           </div>
         </div>
       </div>
 
-      {/* Activity Heatmap Section */}
-      <div className="glass-card p-6 rounded-xl border border-gray-800 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <Calendar className="w-4 h-4 text-emerald-400" />
-              Viewing Velocity Heatmap (Last 28 Days)
-            </h2>
-            <p className="text-xs text-gray-400 font-mono">Daily scrobble frequency score</p>
-          </div>
-          <div className="flex items-center space-x-2 text-[10px] font-mono text-gray-400">
-            <span>Less</span>
-            <div className="flex space-x-1">
-              <div className="w-3 h-3 rounded bg-gray-900 border border-gray-800" />
-              <div className="w-3 h-3 rounded bg-emerald-950 border border-emerald-800" />
-              <div className="w-3 h-3 rounded bg-emerald-800 border border-emerald-700" />
-              <div className="w-3 h-3 rounded bg-emerald-600" />
-              <div className="w-3 h-3 rounded bg-emerald-400" />
-            </div>
-            <span>More</span>
-          </div>
-        </div>
+      {/* Comprehensive Fields Inspection Grid */}
+      <div className="glass-panel p-6 rounded-2xl border border-slate-800 space-y-4">
+        <h2 className="text-lg font-bold text-white flex items-center gap-2">
+          <Database className="w-5 h-5 text-emerald-400" />
+          <span>Tiered Storage Engine Field Telemetry</span>
+        </h2>
 
-        <div className="grid grid-cols-7 sm:grid-cols-14 md:grid-cols-28 gap-2 pt-2">
-          {activityHeatmap.map((item) => (
-            <div
-              key={item.day}
-              className={`h-9 rounded-lg border flex flex-col items-center justify-center transition-all hover:scale-110 cursor-pointer ${
-                item.intensity === 0 ? 'bg-gray-900/60 border-gray-800 text-gray-600' :
-                item.intensity === 1 ? 'bg-emerald-950 border-emerald-800/80 text-emerald-400' :
-                item.intensity === 2 ? 'bg-emerald-900 border-emerald-700 text-emerald-300' :
-                item.intensity === 3 ? 'bg-emerald-700 border-emerald-600 text-white font-bold' :
-                'bg-emerald-500 border-emerald-400 text-gray-950 font-bold shadow-lg shadow-emerald-500/20'
-              }`}
-              title={`Day ${item.day}: Level ${item.intensity} activity`}
-            >
-              <span className="text-[10px] font-mono">D{item.day}</span>
-            </div>
-          ))}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 font-mono text-xs">
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <span className="text-slate-400">REDIS WARM TIER HIT RATE</span>
+            <p className="text-2xl font-extrabold text-blue-400">{data.storage.warm_hit_rate}%</p>
+            <p className="text-[11px] text-slate-500">Sub-millisecond access for blobs &le; 100KB</p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <span className="text-slate-400">POSTGRES COLD STORAGE BLOBS</span>
+            <p className="text-2xl font-extrabold text-purple-400">{data.storage.cold_blobs}</p>
+            <p className="text-[11px] text-slate-500">Persistent _cold_ref pointers</p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+            <span className="text-slate-400">AVERAGE CACHE LATENCY</span>
+            <p className="text-2xl font-extrabold text-emerald-400">{data.storage.redis_latency_ms} ms</p>
+            <p className="text-[11px] text-slate-500">High-throughput payload caching</p>
+          </div>
         </div>
       </div>
     </div>

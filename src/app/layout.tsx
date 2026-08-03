@@ -10,7 +10,11 @@ import {
   ExternalLink,
   Layers,
   Database,
-  Sparkles
+  Sparkles,
+  Film,
+  Code2,
+  Heart,
+  Music
 } from 'lucide-react';
 
 export const metadata: Metadata = {
@@ -42,12 +46,12 @@ export default function RootLayout({
                 ONLINE (us-west)
               </span>
               <span className="text-slate-400 hidden md:inline">
-                | Core Gateway :8000 | Tiered Storage | Domain Plugins
+                | Core Gateway :8000 | Tiered Storage | Dedicated Plugin Tabs
               </span>
             </div>
 
             <div className="flex items-center space-x-4">
-              <span className="text-slate-400 text-[11px] hidden sm:inline">Build v1.2.0-customizable</span>
+              <span className="text-slate-400 text-[11px] hidden sm:inline">v1.4.0-plugin-tabs</span>
               <a
                 href="https://github.com/piderking/TRAKT-backend"
                 target="_blank"
@@ -65,7 +69,7 @@ export default function RootLayout({
             <aside className="w-64 bg-[#0B0E17]/90 backdrop-blur-xl border-r border-slate-800/80 flex flex-col justify-between flex-shrink-0 z-40">
               <div className="p-5">
                 {/* Brand Header */}
-                <div className="flex items-center space-x-3 mb-8">
+                <div className="flex items-center space-x-3 mb-6">
                   <div className="h-9 w-9 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/20 border border-blue-400/30">
                     <Layers className="w-5 h-5 text-white" />
                   </div>
@@ -75,59 +79,89 @@ export default function RootLayout({
                   </div>
                 </div>
 
-                {/* Navigation Links */}
-                <nav className="space-y-1.5 font-medium text-sm">
+                {/* Dedicated Plugin Navigation Tabs */}
+                <nav className="space-y-1 font-medium text-xs font-mono">
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider px-3 pb-1 block">CORE APPS</span>
+
                   <Link
                     href="/"
-                    className="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all group"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
                   >
                     <LayoutDashboard className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
                     <span>Node Dashboard</span>
                   </Link>
 
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider px-3 pt-3 pb-1 block">PLUGIN TABS</span>
+
                   <Link
-                    href="/analytics"
-                    className="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all group"
+                    href="/movies"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
                   >
-                    <BarChart3 className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-                    <span>Analytics Engine</span>
+                    <Film className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
+                    <span>Movies & Diary</span>
                   </Link>
 
                   <Link
-                    href="/lists"
-                    className="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all group"
+                    href="/wakatime"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
                   >
-                    <ListFilter className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                    <span>Dynamic List Builder</span>
+                    <Code2 className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                    <span>WakaTime & Tokens</span>
+                  </Link>
+
+                  <Link
+                    href="/health"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
+                  >
+                    <Heart className="w-4 h-4 text-red-400 group-hover:scale-110 transition-transform" />
+                    <span>Health & Vitals</span>
+                  </Link>
+
+                  <Link
+                    href="/spotify"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
+                  >
+                    <Music className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
+                    <span>Spotify Music</span>
+                  </Link>
+
+                  <span className="text-[10px] text-slate-500 uppercase tracking-wider px-3 pt-3 pb-1 block">ANALYTICS & CONTROL</span>
+
+                  <Link
+                    href="/analytics"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
+                  >
+                    <BarChart3 className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
+                    <span>Analytics (All Fields)</span>
                   </Link>
 
                   <Link
                     href="/plugins"
-                    className="flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 border border-transparent hover:border-slate-700/50 transition-all group"
+                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
                   >
                     <Cpu className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                    <span>Plugin Studio & Topology</span>
+                    <span>Plugin Studio & OAuth</span>
                   </Link>
                 </nav>
               </div>
 
               {/* Sidebar Footer Widget */}
               <div className="p-4 border-t border-slate-800/80 bg-[#07090E]/60">
-                <div className="rounded-xl bg-slate-900/80 p-3.5 border border-slate-800 text-xs space-y-2.5 shadow-inner">
+                <div className="rounded-xl bg-slate-900/80 p-3.5 border border-slate-800 text-xs space-y-2.5 shadow-inner font-mono">
                   <div className="flex items-center justify-between text-slate-300">
                     <span className="flex items-center space-x-1.5 font-medium">
                       <Database className="w-3.5 h-3.5 text-emerald-400" />
-                      <span>Tiered Storage</span>
+                      <span>Storage Tier</span>
                     </span>
                     <span className="text-emerald-400 font-mono text-[10px] bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-500/20">
-                      CONNECTED
+                      ONLINE
                     </span>
                   </div>
                   <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
                     <div className="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full w-[42%]" />
                   </div>
                   <div className="flex justify-between text-[10px] text-slate-400 font-mono">
-                    <span>Warm: Redis Cache</span>
+                    <span>Warm: Redis</span>
                     <span>Cold: Postgres</span>
                   </div>
                 </div>
