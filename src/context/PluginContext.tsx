@@ -185,6 +185,37 @@ const DEFAULT_PLUGINS: PluginManifest[] = [
         { id: 'lb3', title: 'Diary & Watchlist', subtitle: '185 Diary Logs • 94 Watchlist Items', tag: 'Lists', progress: 100 }
       ]
     }
+  },
+  {
+    id: 'spotify',
+    name: 'Spotify API Scrobbler',
+    description: 'Tracks live currently playing tracks, listening history, top artists, and audio feature telemetry.',
+    version: '1.0.0',
+    author: 'Music Subsystem',
+    category: 'telemetry',
+    endpointUrl: '/api/v1/spotify/summary',
+    uiEndpointUrl: '/static/plugins/spotify/ui',
+    enabled: true,
+    isCustomizable: true,
+    pingMs: 14,
+    theme: {
+      primaryColor: '#1DB954',
+      glowColor: 'rgba(29, 185, 84, 0.35)',
+      gradient: 'from-emerald-600 to-green-500',
+      badgeBg: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      cardBorder: 'hover:border-emerald-500/50'
+    },
+    widget: {
+      title: 'SPOTIFY SCROBBLER TELEMETRY',
+      subtitle: 'Live Playback & Audio Features',
+      metricValue: 'Starboy',
+      metricLabel: 'The Weeknd • 34 Played Today',
+      items: [
+        { id: 'sp1', title: 'Starboy (feat. Daft Punk)', subtitle: 'Now Playing • Album: Starboy', tag: 'Playing', progress: 61 },
+        { id: 'sp2', title: 'Top Artists Breakdown', subtitle: 'The Weeknd (14) • Daft Punk (8) • Kendrick (6)', tag: 'Stats', progress: 82 },
+        { id: 'sp3', title: 'Track Audio Analysis', subtitle: 'Tempo: 186 BPM • Energy: 82%', tag: 'Audio', progress: 86 }
+      ]
+    }
   }
 ];
 

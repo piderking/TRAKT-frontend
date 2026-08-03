@@ -45,6 +45,8 @@ export default function PluginsTopologyPage() {
   const [traktClientId, setTraktClientId] = useState('demo_trakt_id_7781');
   const [traktClientSecret, setTraktClientSecret] = useState('demo_trakt_secret_9981');
   const [healthSyncToken, setHealthSyncToken] = useState('hc_token_demo_3341');
+  const [spotifyClientId, setSpotifyClientId] = useState('spot_client_id_99182');
+  const [spotifyClientSecret, setSpotifyClientSecret] = useState('spot_client_secret_7718');
 
   // Letterboxd Zip Importer State
   const [lbFile, setLbFile] = useState<File | null>(null);
@@ -361,6 +363,31 @@ export default function PluginsTopologyPage() {
                     value={healthSyncToken}
                     onChange={e => setHealthSyncToken(e.target.value)}
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-red-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedPluginId === 'spotify' && (
+              <div className="space-y-4 text-xs font-mono">
+                <div className="space-y-1.5">
+                  <label className="text-slate-300 font-semibold">SPOTIFY WEB API CLIENT ID</label>
+                  <input
+                    type="text"
+                    value={spotifyClientId}
+                    onChange={e => setSpotifyClientId(e.target.value)}
+                    placeholder="spot_client_id_..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-slate-300 font-semibold">SPOTIFY WEB API CLIENT SECRET</label>
+                  <input
+                    type="password"
+                    value={spotifyClientSecret}
+                    onChange={e => setSpotifyClientSecret(e.target.value)}
+                    placeholder="spot_client_secret_..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
                   />
                 </div>
               </div>
