@@ -47,6 +47,8 @@ export default function PluginsTopologyPage() {
   const [healthSyncToken, setHealthSyncToken] = useState('hc_token_demo_3341');
   const [spotifyClientId, setSpotifyClientId] = useState('spot_client_id_99182');
   const [spotifyClientSecret, setSpotifyClientSecret] = useState('spot_client_secret_7718');
+  const [steamApiKey, setSteamApiKey] = useState('steam_web_api_key_88912');
+  const [steamId64, setSteamId64] = useState('76561198012345678');
 
   // Letterboxd Zip Importer State
   const [lbFile, setLbFile] = useState<File | null>(null);
@@ -388,6 +390,31 @@ export default function PluginsTopologyPage() {
                     onChange={e => setSpotifyClientSecret(e.target.value)}
                     placeholder="spot_client_secret_..."
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              </div>
+            )}
+
+            {selectedPluginId === 'steam' && (
+              <div className="space-y-4 text-xs font-mono">
+                <div className="space-y-1.5">
+                  <label className="text-slate-300 font-semibold">STEAM WEB API KEY (steamcommunity.com/dev/apikey)</label>
+                  <input
+                    type="password"
+                    value={steamApiKey}
+                    onChange={e => setSteamApiKey(e.target.value)}
+                    placeholder="steam_web_api_key_..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-cyan-500"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-slate-300 font-semibold">STEAM ID 64 (Steam Community Profile ID)</label>
+                  <input
+                    type="text"
+                    value={steamId64}
+                    onChange={e => setSteamId64(e.target.value)}
+                    placeholder="76561198..."
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-cyan-500"
                   />
                 </div>
               </div>

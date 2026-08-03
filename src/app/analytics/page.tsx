@@ -7,6 +7,7 @@ import {
   Code2, 
   Heart, 
   Music, 
+  Gamepad2,
   Database, 
   Cpu, 
   Flame, 
@@ -25,6 +26,7 @@ export default function AnalyticsPage() {
     wakatime: { coding_hours: "5h 7m", active_project: "TRAKT", python_pct: 52.4, ts_pct: 38.1 },
     health: { bpm: 74, resting_bpm: 58, steps: 8840, calories: 465, sleep_hrs: 7.8, spo2: 99.0 },
     spotify: { tracks_today: 34, listening_mins: 118, tempo_bpm: 186, energy_pct: 82 },
+    steam: { games_owned: 184, total_hours: 1420.5, recent_2weeks: 24.6, achievements: 842 },
     storage: { warm_hit_rate: 98.4, cold_blobs: 1420, redis_latency_ms: 0.4 }
   });
 
@@ -42,12 +44,12 @@ export default function AnalyticsPage() {
           <span>Cross-Domain Ecosystem Analytics</span>
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          Comprehensive real-time telemetry across Movies, WakaTime, Antigravity AI Tokens, Health Vitals, Spotify Music, and Tiered Storage.
+          Comprehensive real-time telemetry across Movies, WakaTime, Antigravity AI Tokens, Health Vitals, Spotify Music, Steam Gaming, and Tiered Storage.
         </p>
       </div>
 
       {/* Domain Breakdown Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 font-mono">
+      <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 font-mono">
         {/* Domain 1: Movies */}
         <div className="glass-panel-glow p-5 rounded-2xl border border-blue-500/30">
           <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
@@ -72,7 +74,7 @@ export default function AnalyticsPage() {
           <div className="text-[11px] space-y-1 text-slate-400 mt-3 pt-2 border-t border-slate-800">
             <div className="flex justify-between"><span>Coding Time:</span><span className="text-emerald-400 font-bold">{data.wakatime.coding_hours}</span></div>
             <div className="flex justify-between"><span>Prompt Tokens:</span><span className="text-purple-400 font-bold">{(data.tokens.prompt / 1000).toFixed(1)}k</span></div>
-            <div className="flex justify-between"><span>Top Language:</span><span className="text-emerald-400 font-bold">Python ({data.wakatime.python_pct}%)</span></div>
+            <div className="flex justify-between"><span>Top Language:</span><span className="text-emerald-400 font-bold">Python</span></div>
           </div>
         </div>
 
@@ -101,6 +103,20 @@ export default function AnalyticsPage() {
             <div className="flex justify-between"><span>Listening Mins:</span><span className="text-emerald-400 font-bold">{data.spotify.listening_mins}m</span></div>
             <div className="flex justify-between"><span>Tempo (BPM):</span><span className="text-purple-400 font-bold">{data.spotify.tempo_bpm}</span></div>
             <div className="flex justify-between"><span>Energy Level:</span><span className="text-amber-400 font-bold">{data.spotify.energy_pct}%</span></div>
+          </div>
+        </div>
+
+        {/* Domain 5: Steam Gaming */}
+        <div className="glass-panel-glow p-5 rounded-2xl border border-cyan-500/30">
+          <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
+            <span>STEAM GAMING</span>
+            <Gamepad2 className="w-4 h-4 text-cyan-400" />
+          </div>
+          <p className="text-3xl font-extrabold text-white">{data.steam.games_owned} <span className="text-xs text-slate-400">games</span></p>
+          <div className="text-[11px] space-y-1 text-slate-400 mt-3 pt-2 border-t border-slate-800">
+            <div className="flex justify-between"><span>Total Hours:</span><span className="text-cyan-400 font-bold">{data.steam.total_hours.toLocaleString()}h</span></div>
+            <div className="flex justify-between"><span>Past 2 Wks:</span><span className="text-amber-400 font-bold">{data.steam.recent_2weeks}h</span></div>
+            <div className="flex justify-between"><span>Achievements:</span><span className="text-purple-400 font-bold">{data.steam.achievements}</span></div>
           </div>
         </div>
       </div>

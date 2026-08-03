@@ -216,6 +216,37 @@ const DEFAULT_PLUGINS: PluginManifest[] = [
         { id: 'sp3', title: 'Track Audio Analysis', subtitle: 'Tempo: 186 BPM • Energy: 82%', tag: 'Audio', progress: 86 }
       ]
     }
+  },
+  {
+    id: 'steam',
+    name: 'Steam Web API Gaming',
+    description: 'Tracks live Steam in-game status, library playtime hours, recent games, and achievement telemetry.',
+    version: '1.0.0',
+    author: 'Gaming Subsystem',
+    category: 'telemetry',
+    endpointUrl: '/api/v1/steam/summary',
+    uiEndpointUrl: '/static/plugins/steam/ui',
+    enabled: true,
+    isCustomizable: true,
+    pingMs: 12,
+    theme: {
+      primaryColor: '#66c0f4',
+      glowColor: 'rgba(102, 192, 244, 0.35)',
+      gradient: 'from-cyan-600 to-blue-500',
+      badgeBg: 'bg-cyan-500/10 text-cyan-400 border-cyan-500/20',
+      cardBorder: 'hover:border-cyan-500/50'
+    },
+    widget: {
+      title: 'STEAM GAMING TELEMETRY',
+      subtitle: 'Live Game Status & Library',
+      metricValue: 'Cyberpunk 2077',
+      metricLabel: '1,420 Total Hours • 184 Games Owned',
+      items: [
+        { id: 'st1', title: 'Cyberpunk 2077', subtitle: 'Currently In-Game • App ID: 1091500', tag: 'Playing', progress: 85 },
+        { id: 'st2', title: 'Steam Library Stats', subtitle: '184 Owned • 1,420.5 Lifetime Hours', tag: 'Stats', progress: 92 },
+        { id: 'st3', title: 'Recent 2 Weeks Gaming', subtitle: '24.6 Playtime Hours • 842 Achievements', tag: 'Recent', progress: 78 }
+      ]
+    }
   }
 ];
 
