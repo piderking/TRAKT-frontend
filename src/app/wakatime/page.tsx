@@ -94,9 +94,6 @@ export default function WakaTimePluginPage() {
         </button>
       </div>
 
-      {/* Setup Guide */}
-      <PluginHelpGuide pluginId="wakatime" />
-
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono">
         <div className="glass-panel-glow p-5 rounded-2xl border border-slate-800">

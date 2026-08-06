@@ -92,9 +92,6 @@ export default function SpotifyPluginPage() {
         </button>
       </div>
 
-      {/* Setup Guide */}
-      <PluginHelpGuide pluginId="spotify" />
-
       {/* Now Playing Banner */}
       <div className="glass-panel-glow p-6 rounded-2xl border border-emerald-500/30 flex flex-col md:flex-row items-center gap-6">
         <img

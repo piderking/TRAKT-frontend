@@ -77,9 +77,6 @@ export default function HealthPluginPage() {
         </button>
       </div>
 
-      {/* Setup Guide */}
-      <PluginHelpGuide pluginId="health" />
-
       {/* Vitals Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono">
         <div className="glass-panel-glow p-5 rounded-2xl border border-red-500/30">

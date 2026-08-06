@@ -23,6 +23,7 @@ import {
   UploadCloud,
   FileArchive
 } from 'lucide-react';
+import { PluginHelpGuide } from '../../components/PluginHelpGuide';
 
 interface OAuthClientData {
   client_id: string;
@@ -286,6 +287,9 @@ export default function PluginsTopologyPage() {
 
         {/* Right Column: Plugin Credentials & Settings Panel */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Section 0: Plugin Setup & Integration Guide */}
+          <PluginHelpGuide pluginId={selectedPluginId as any} />
+
           {/* Section 1: Plugin API Key & Credentials Configuration */}
           <div className="glass-panel-glow p-6 rounded-2xl border border-slate-800 space-y-6">
             <div className="flex items-center justify-between pb-4 border-b border-slate-800/80">
