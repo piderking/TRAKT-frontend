@@ -86,10 +86,10 @@ export default function RootLayout({
 
                   <Link
                     href="/"
-                    className="flex items-center space-x-3 px-3 py-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800/60 transition-all group"
+                    className="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-white font-bold bg-indigo-600/20 border border-indigo-500/30 hover:bg-indigo-600/30 transition-all group shadow-sm"
                   >
-                    <LayoutDashboard className="w-4 h-4 text-blue-400 group-hover:scale-110 transition-transform" />
-                    <span>Node Dashboard</span>
+                    <Sparkles className="w-4 h-4 text-indigo-400 group-hover:scale-110 transition-transform" />
+                    <span>Universal Stream (Notion)</span>
                   </Link>
 
                   <span className="text-[10px] text-slate-500 uppercase tracking-wider px-3 pt-3 pb-1 block">PLUGIN TABS</span>
