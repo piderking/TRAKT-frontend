@@ -85,6 +85,33 @@ export default function PluginsTopologyPage() {
     }
   }, []);
 
+  useEffect(() => {
+    async function loadPluginConfig() {
+      try {
+        const res = await fetch(`${originUrl}/api/v1/plugins/config/${selectedPluginId}`);
+        const data = await res.json();
+        const cfg = data.config || {};
+        if (selectedPluginId === 'steam') {
+          if (cfg.steam_api_key) setSteamApiKey(cfg.steam_api_key);
+          if (cfg.steam_id64) setSteamId64(cfg.steam_id64);
+        } else if (selectedPluginId === 'spotify') {
+          if (cfg.spotify_client_id) setSpotifyClientId(cfg.spotify_client_id);
+          if (cfg.spotify_client_secret) setSpotifyClientSecret(cfg.spotify_client_secret);
+        } else if (selectedPluginId === 'wakatime') {
+          if (cfg.wakatime_api_key) setWakaApiKey(cfg.wakatime_api_key);
+        } else if (selectedPluginId === 'health') {
+          if (cfg.health_connect_sync_token) setHealthSyncToken(cfg.health_connect_sync_token);
+        } else if (selectedPluginId === 'movies') {
+          if (cfg.trakt_client_id) setTraktClientId(cfg.trakt_client_id);
+          if (cfg.trakt_client_secret) setTraktClientSecret(cfg.trakt_client_secret);
+        }
+      } catch (err) {
+        console.error('Failed to load plugin config:', err);
+      }
+    }
+    loadPluginConfig();
+  }, [selectedPluginId, originUrl]);
+
   const handleColorChange = (newColor: string) => {
     updatePluginTheme(selectedPluginId, {
       primaryColor: newColor,
@@ -92,9 +119,15 @@ export default function PluginsTopologyPage() {
     });
   };
 
-  const handleFlushCache = () => {
+  const handleFlushCache = async () => {
     setFlushingCache(true);
-    setTimeout(() => setFlushingCache(false), 1200);
+    try {
+      await fetch(`${originUrl}/api/v1/system/flush`, { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to flush cache:', err);
+    } finally {
+      setTimeout(() => setFlushingCache(false), 1200);
+    }
   };
 
   const handleSavePluginConfig = async () => {
@@ -107,9 +140,13 @@ export default function PluginsTopologyPage() {
         configPayload = { trakt_client_id: traktClientId, trakt_client_secret: traktClientSecret };
       } else if (selectedPluginId === 'health') {
         configPayload = { health_connect_sync_token: healthSyncToken };
+      } else if (selectedPluginId === 'spotify') {
+        configPayload = { spotify_client_id: spotifyClientId, spotify_client_secret: spotifyClientSecret };
+      } else if (selectedPluginId === 'steam') {
+        configPayload = { steam_api_key: steamApiKey, steam_id64: steamId64 };
       }
 
-      await fetch(`${originUrl}/api/v1/plugins/config?plugin_id=${selectedPluginId}`, {
+      await fetch(`${originUrl}/api/v1/plugins/config/${selectedPluginId}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configPayload)
