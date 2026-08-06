@@ -277,16 +277,53 @@ export function MovieLogger() {
             </div>
 
             <form onSubmit={handleCreateLog} className="space-y-4 font-mono text-xs">
-              <div className="space-y-1">
-                <label className="text-slate-300 font-semibold">MOVIE TITLE</label>
+              <div className="space-y-1 relative">
+                <label className="text-slate-300 font-semibold flex justify-between">
+                  <span>MOVIE TITLE (LIVE AUTO-FILL)</span>
+                  <span className="text-amber-400 font-normal text-[10px]">Adaptive iTunes & TMDB Search</span>
+                </label>
                 <input
                   type="text"
                   required
                   value={movieTitle}
-                  onChange={e => setMovieTitle(e.target.value)}
-                  placeholder="e.g. Dune: Part Two"
+                  onChange={e => {
+                    setMovieTitle(e.target.value);
+                    if (e.target.value.length >= 2) {
+                      fetchTrendingOrSearch(e.target.value);
+                    }
+                  }}
+                  placeholder="Type movie title (e.g. Dune, Inception, Gladiator)..."
                   className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-amber-500"
                 />
+
+                {/* Adaptive Auto-Fill Dropdown */}
+                {movieTitle.length >= 2 && searchResults.length > 0 && (
+                  <div className="absolute left-0 right-0 top-16 bg-slate-950/95 backdrop-blur-xl border border-slate-800 rounded-2xl p-2 z-50 shadow-2xl space-y-1 font-mono text-xs max-h-56 overflow-y-auto">
+                    <span className="text-[10px] text-slate-500 font-bold px-2 py-0.5 block uppercase">AUTO-FILL SUGGESTIONS:</span>
+                    {searchResults.map((m) => (
+                      <div
+                        key={m.id}
+                        onClick={() => {
+                          setMovieTitle(m.title);
+                          setReleaseYear(m.release_year);
+                          setPosterUrl(m.poster_url);
+                          if (m.genre) setTagsInput(m.genre.toLowerCase());
+                          setSearchResults([]);
+                        }}
+                        className="p-2 rounded-xl hover:bg-amber-500/10 hover:text-amber-300 flex items-center justify-between cursor-pointer transition-colors"
+                      >
+                        <div className="flex items-center space-x-2.5">
+                          {m.poster_url && <img src={m.poster_url} alt={m.title} className="w-7 h-10 object-cover rounded border border-slate-800" />}
+                          <div>
+                            <p className="font-bold text-white text-xs">{m.title}</p>
+                            <p className="text-slate-400 text-[10px]">{m.release_year} • {m.genre || 'Cinema'}</p>
+                          </div>
+                        </div>
+                        <span className="text-amber-400 font-bold text-[11px]">Auto-Fill ↵</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
