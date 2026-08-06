@@ -564,10 +564,33 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                       </div>
                     )}
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-500 pt-1">
-                      <span>Items Fetched: {plugin.items_fetched_count || 0}</span>
-                      <span>Last Fetch Status: <code className={`font-bold ${plugin.last_fetch_status === 'success' ? 'text-emerald-400' : 'text-amber-400'}`}>{plugin.last_fetch_status}</code></span>
-                    </div>
+                    {/* HTTP Interaction Telemetry Inspector */}
+                    {plugin.last_interaction && (
+                      <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2 font-mono text-[11px]">
+                        <div className="flex justify-between items-center text-slate-400">
+                          <span className="font-bold text-indigo-400 uppercase flex items-center gap-1">
+                            <Activity className="w-3 h-3 text-indigo-400" />
+                            <span>HTTP INTERACTION TELEMETRY ({plugin.last_interaction.time_str})</span>
+                          </span>
+                          <span className="px-2 py-0.5 rounded bg-emerald-950 text-emerald-400 font-bold border border-emerald-500/30">
+                            {plugin.last_interaction.status_code} OK • {plugin.last_interaction.latency_ms}ms
+                          </span>
+                        </div>
+
+                        <div className="text-slate-300 truncate">
+                          Target API: <code className="text-indigo-300 font-bold">{plugin.last_interaction.target_url}</code>
+                        </div>
+
+                        <details className="text-[10px] space-y-1">
+                          <summary className="text-slate-500 hover:text-white cursor-pointer font-bold select-none">
+                            ▶ View Raw Service Payload Response
+                          </summary>
+                          <pre className="p-2 rounded bg-black text-emerald-400 font-mono text-[10px] overflow-x-auto max-h-36">
+                            {JSON.stringify(plugin.last_interaction.response_preview, null, 2)}
+                          </pre>
+                        </details>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
