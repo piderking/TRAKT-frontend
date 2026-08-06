@@ -18,7 +18,9 @@ import {
   Play,
   Pause,
   Plus,
-  ChevronRight
+  ChevronRight,
+  FileText,
+  Filter
 } from 'lucide-react';
 
 interface SettingsModalProps {
@@ -27,7 +29,7 @@ interface SettingsModalProps {
 }
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
-  const [activeTab, setActiveTab] = useState<'core' | 'plugins' | 'register'>('plugins');
+  const [activeTab, setActiveTab] = useState<'plugins' | 'fetching' | 'core' | 'register'>('fetching');
 
   // Core System State
   const [dbStatus, setDbStatus] = useState<any>(null);
@@ -45,11 +47,16 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [spotifyClientSecret, setSpotifyClientSecret] = useState('');
   const [savedTokenPlugin, setSavedTokenPlugin] = useState<string | null>(null);
 
-  // Historical Data Fetcher State
+  // Historical Data & Selective Backfill State
   const [historicalDays, setHistoricalDays] = useState<number>(1);
+  const [selectedPluginIds, setSelectedPluginIds] = useState<string[]>([]);
   const [fetchingHistorical, setFetchingHistorical] = useState(false);
   const [historicalSuccess, setHistoricalSuccess] = useState(false);
   const [historicalResult, setHistoricalResult] = useState<any>(null);
+
+  // Fetcher Live Terminal Logs State
+  const [fetcherLogs, setFetcherLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   // Custom Plugin Registration Form
   const [regPluginId, setRegPluginId] = useState('');
@@ -74,6 +81,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       if (plugData.plugins) {
         setDiscoveredPlugins(plugData.plugins);
         setFetcherRunning(plugData.fetcher_loop_running ?? true);
+        if (selectedPluginIds.length === 0) {
+          setSelectedPluginIds(plugData.plugins.map((p: any) => p.id));
+        }
       }
 
       // 3. Fetch Stored Plugin Tokens
@@ -94,14 +104,34 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           if (sData.config.spotify_client_secret) setSpotifyClientSecret(sData.config.spotify_client_secret);
         }
       }
+
+      // 4. Fetch Live Terminal Logs
+      fetchLogs();
     } catch (err) {
       console.error('Failed to fetch system settings:', err);
+    }
+  };
+
+  const fetchLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const logsRes = await fetch(`${originUrl}/api/v1/plugins/fetchers/logs`);
+      const logsData = await logsRes.json();
+      if (logsData.logs) {
+        setFetcherLogs(logsData.logs);
+      }
+    } catch (err) {
+      console.error('Failed to fetch logs:', err);
+    } finally {
+      setLoadingLogs(false);
     }
   };
 
   useEffect(() => {
     if (isOpen) {
       fetchSystemData();
+      const interval = setInterval(fetchLogs, 3000);
+      return () => clearInterval(interval);
     }
   }, [isOpen]);
 
@@ -145,11 +175,26 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
     }
   };
 
+  const handleTogglePluginSelect = (pluginId: string) => {
+    if (selectedPluginIds.includes(pluginId)) {
+      setSelectedPluginIds(selectedPluginIds.filter(id => id !== pluginId));
+    } else {
+      setSelectedPluginIds([...selectedPluginIds, pluginId]);
+    }
+  };
+
   const handleTriggerHistoricalBackfill = async () => {
     setFetchingHistorical(true);
     try {
-      const res = await fetch(`${originUrl}/api/v1/plugins/fetchers/historical?days=${historicalDays}`, {
-        method: 'POST'
+      const payload = {
+        days: historicalDays,
+        plugin_ids: selectedPluginIds
+      };
+
+      const res = await fetch(`${originUrl}/api/v1/plugins/fetchers/historical`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
       });
       const data = await res.json();
       setHistoricalResult(data);
@@ -209,7 +254,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-md flex items-center justify-center p-4">
-      <div className="glass-panel rounded-3xl border border-slate-800 max-w-4xl w-full h-[80vh] shadow-2xl font-sans flex flex-col overflow-hidden">
+      <div className="glass-panel rounded-3xl border border-slate-800 max-w-4xl w-full h-[85vh] shadow-2xl font-sans flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex justify-between items-center px-6 py-4 border-b border-slate-800 bg-slate-950/40">
           <div className="flex items-center space-x-3">
@@ -234,6 +279,23 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             <div className="space-y-1.5">
               <div className="text-[10px] text-slate-500 font-bold px-3 py-1 uppercase">SETTINGS NAVIGATION</div>
               
+              <button
+                onClick={() => setActiveTab('fetching')}
+                className={`w-full text-left px-3.5 py-3 rounded-xl transition-all flex items-center justify-between border ${
+                  activeTab === 'fetching'
+                    ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/40 font-bold shadow-lg'
+                    : 'bg-slate-950 text-slate-400 border-slate-800/80 hover:text-white hover:bg-slate-900'
+                }`}
+              >
+                <div className="flex items-center space-x-2.5">
+                  <Activity className="w-4 h-4 text-emerald-400" />
+                  <span>Background Fetching & Logs</span>
+                </div>
+                <span className="px-2 py-0.5 rounded-full bg-emerald-950 text-emerald-400 text-[10px] font-bold">
+                  Live
+                </span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('plugins')}
                 className={`w-full text-left px-3.5 py-3 rounded-xl transition-all flex items-center justify-between border ${
@@ -260,7 +322,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 }`}
               >
                 <div className="flex items-center space-x-2.5">
-                  <Database className="w-4 h-4 text-emerald-400" />
+                  <Database className="w-4 h-4 text-purple-400" />
                   <span>Persistent DB & System</span>
                 </div>
                 <ChevronRight className="w-3.5 h-3.5 text-slate-600" />
@@ -275,7 +337,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 }`}
               >
                 <div className="flex items-center space-x-2.5">
-                  <FolderPlus className="w-4 h-4 text-purple-400" />
+                  <FolderPlus className="w-4 h-4 text-amber-400" />
                   <span>Add Plugin Directory</span>
                 </div>
                 <Plus className="w-3.5 h-3.5 text-slate-600" />
@@ -291,72 +353,51 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           {/* Right Main Content Panel */}
           <div className="flex-1 overflow-y-auto p-6 space-y-5">
-            {/* TAB 1: Core System & Database */}
-            {activeTab === 'core' && (
-              <div className="space-y-4 font-mono text-xs">
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                    <span className="text-[10px] text-slate-500 uppercase font-semibold">DATABASE STATUS</span>
-                    <p className="text-lg font-bold text-emerald-400 mt-1">PERSISTENT ONLINE</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">SQLite & JSON Disk Tier</p>
+            {/* TAB 1: BACKGROUND FETCHING & LOGS */}
+            {activeTab === 'fetching' && (
+              <div className="space-y-5 font-mono text-xs">
+                {/* SELECTIVE PLUGIN HISTORICAL BACKFILL CONTROL PANEL */}
+                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-4 shadow-xl">
+                  <div>
+                    <h4 className="font-bold text-white text-base font-sans flex items-center gap-2">
+                      <Filter className="w-5 h-5 text-indigo-400" />
+                      <span>Selective Plugin Historical Backfill</span>
+                    </h4>
+                    <p className="text-slate-400 text-[11px] mt-0.5">
+                      Select specific microservice fetcher plugins to trigger historical data backfill.
+                    </p>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                    <span className="text-[10px] text-slate-500 uppercase font-semibold">BACKGROUND FETCHERS</span>
-                    <p className="text-lg font-bold text-indigo-400 mt-1">{fetcherRunning ? 'ACTIVE (30s)' : 'STOPPED'}</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">Auto-Plugs into Database</p>
+                  {/* Plugin Selector Checkboxes */}
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                    {discoveredPlugins.map((plugin) => (
+                      <label
+                        key={plugin.id}
+                        className={`p-2.5 rounded-xl border flex items-center space-x-2.5 cursor-pointer transition-all ${
+                          selectedPluginIds.includes(plugin.id)
+                            ? 'bg-indigo-500/20 text-white border-indigo-500/50 font-bold'
+                            : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedPluginIds.includes(plugin.id)}
+                          onChange={() => handleTogglePluginSelect(plugin.id)}
+                          className="rounded border-slate-800 text-indigo-500 focus:ring-0"
+                        />
+                        <span className="capitalize">{plugin.name || plugin.id}</span>
+                      </label>
+                    ))}
                   </div>
 
-                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
-                    <span className="text-[10px] text-slate-500 uppercase font-semibold">DISCOVERED PLUGINS</span>
-                    <p className="text-lg font-bold text-white mt-1">{discoveredPlugins.length} Loaded</p>
-                    <p className="text-[11px] text-slate-400 mt-0.5">From /plugins folder</p>
-                  </div>
-                </div>
-
-                {/* Cache & DB Flush Panel */}
-                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
-                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
-                    <HardDrive className="w-4 h-4 text-indigo-400" />
-                    <span>Database & Cache Management</span>
-                  </h4>
-                  <p className="text-slate-400 text-[11px]">
-                    Flush warm in-memory cache tier while retaining persistent credentials in disk storage.
-                  </p>
-
-                  <button
-                    onClick={handleFlushDb}
-                    disabled={flushing}
-                    className="px-4 py-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/40 font-bold transition-all flex items-center space-x-2"
-                  >
-                    {flushSuccess ? <Check className="w-4 h-4" /> : <RefreshCw className={`w-4 h-4 ${flushing ? 'animate-spin' : ''}`} />}
-                    <span>{flushSuccess ? 'Flushed Warm Cache!' : flushing ? 'Flushing...' : 'Flush Warm Cache Tier'}</span>
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 2: Dynamic Plugin Directories & Tokens */}
-            {activeTab === 'plugins' && (
-              <div className="space-y-4 font-mono text-xs">
-                {/* HISTORICAL TELEMETRY BACKFILL ENGINE PANEL */}
-                <div className="p-5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-3 shadow-xl">
-                  <div className="flex justify-between items-center">
-                    <div>
-                      <h4 className="font-bold text-white text-sm font-sans flex items-center gap-2">
-                        <Activity className="w-4 h-4 text-indigo-400" />
-                        <span>Historical Telemetry Backfill Engine</span>
-                      </h4>
-                      <p className="text-slate-400 text-[11px] mt-0.5">
-                        Fetch and backfill historical activity records into persistent database tier.
-                      </p>
-                    </div>
-
+                  {/* Backfill Time Window & Submit Button */}
+                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2 border-t border-slate-800/80">
                     <div className="flex items-center space-x-2">
+                      <span className="text-slate-400 font-semibold text-[11px]">TIME WINDOW:</span>
                       <select
                         value={historicalDays}
                         onChange={e => setHistoricalDays(parseInt(e.target.value))}
-                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-[11px]"
+                        className="px-3 py-2 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-[11px]"
                       >
                         <option value={1}>1 Day (Default)</option>
                         <option value={7}>7 Days</option>
@@ -364,24 +405,72 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                         <option value={90}>90 Days</option>
                         <option value={365}>1 Year (365 Days)</option>
                       </select>
-
-                      <button
-                        onClick={handleTriggerHistoricalBackfill}
-                        disabled={fetchingHistorical}
-                        className="px-4 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-[11px] shadow-lg transition-all flex items-center space-x-1.5"
-                      >
-                        {historicalSuccess ? <Check className="w-3.5 h-3.5" /> : <RefreshCw className={`w-3.5 h-3.5 ${fetchingHistorical ? 'animate-spin' : ''}`} />}
-                        <span>{historicalSuccess ? 'Historical Data Synced!' : fetchingHistorical ? 'Syncing...' : 'Trigger Backfill'}</span>
-                      </button>
                     </div>
+
+                    <button
+                      onClick={handleTriggerHistoricalBackfill}
+                      disabled={fetchingHistorical || selectedPluginIds.length === 0}
+                      className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs shadow-lg transition-all flex items-center justify-center space-x-2 border border-indigo-400/30"
+                    >
+                      {historicalSuccess ? <Check className="w-4 h-4" /> : <RefreshCw className={`w-4 h-4 ${fetchingHistorical ? 'animate-spin' : ''}`} />}
+                      <span>{historicalSuccess ? 'Backfill Complete!' : fetchingHistorical ? 'Syncing Historical Data...' : `Backfill ${selectedPluginIds.length} Selected Plugins`}</span>
+                    </button>
                   </div>
 
                   {historicalResult && (
-                    <div className="p-3 rounded-xl bg-slate-900/80 border border-indigo-500/20 text-[11px] text-slate-300">
-                      Total Historical Records Backfilled: <strong className="text-emerald-400">{historicalResult.total_records_backfilled || 0}</strong>
+                    <div className="p-3 rounded-xl bg-slate-900 border border-indigo-500/30 text-[11px] text-slate-300">
+                      Total Records Inserted into Database: <strong className="text-emerald-400 font-bold">{historicalResult.total_records_backfilled || 0}</strong>
                     </div>
                   )}
                 </div>
+
+                {/* REAL-TIME FETCHER TERMINAL LOGS INSPECTOR */}
+                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 shadow-xl">
+                  <div className="flex justify-between items-center">
+                    <h4 className="font-bold text-white text-base font-sans flex items-center gap-2">
+                      <Terminal className="w-5 h-5 text-emerald-400" />
+                      <span>Live Background Fetcher Terminal Stream ({fetcherLogs.length})</span>
+                    </h4>
+
+                    <button
+                      onClick={fetchLogs}
+                      className="p-1.5 rounded-lg bg-slate-900 text-slate-400 hover:text-white border border-slate-800 text-[10px] flex items-center space-x-1"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${loadingLogs ? 'animate-spin' : ''}`} />
+                      <span>Refresh Stream</span>
+                    </button>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-black border border-slate-800/80 font-mono text-[11px] space-y-2 max-h-72 overflow-y-auto selection:bg-slate-800">
+                    {fetcherLogs.length === 0 ? (
+                      <div className="text-slate-600 text-center py-4">No background fetcher logs recorded yet.</div>
+                    ) : (
+                      fetcherLogs.map((log, idx) => (
+                        <div key={idx} className="flex items-start space-x-2 font-mono leading-relaxed border-b border-slate-900/60 pb-1">
+                          <span className="text-slate-600 shrink-0">[{log.time_str}]</span>
+                          <span className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase shrink-0 ${
+                            log.level === 'ERROR'
+                              ? 'bg-red-950 text-red-400 border border-red-500/30'
+                              : log.level === 'WARNING'
+                              ? 'bg-amber-950 text-amber-400 border border-amber-500/30'
+                              : 'bg-indigo-950 text-indigo-400 border border-indigo-500/30'
+                          }`}>
+                            {log.plugin_id}
+                          </span>
+                          <span className={log.level === 'ERROR' ? 'text-red-300' : 'text-slate-300'}>
+                            {log.message}
+                          </span>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 2: Dynamic Plugin Directories & Tokens */}
+            {activeTab === 'plugins' && (
+              <div className="space-y-4 font-mono text-xs">
                 {discoveredPlugins.map((plugin) => (
                   <div key={plugin.id} className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 shadow-lg">
                     <div className="flex justify-between items-start">
@@ -484,7 +573,52 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
               </div>
             )}
 
-            {/* TAB 3: Register Custom Plugin Directory */}
+            {/* TAB 3: Persistent DB & System */}
+            {activeTab === 'core' && (
+              <div className="space-y-4 font-mono text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold">DATABASE STATUS</span>
+                    <p className="text-lg font-bold text-emerald-400 mt-1">PERSISTENT ONLINE</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">SQLite & JSON Disk Tier</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold">BACKGROUND FETCHERS</span>
+                    <p className="text-lg font-bold text-indigo-400 mt-1">{fetcherRunning ? 'ACTIVE (30s)' : 'STOPPED'}</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Auto-Plugs into Database</p>
+                  </div>
+
+                  <div className="p-4 rounded-xl bg-slate-950 border border-slate-800">
+                    <span className="text-[10px] text-slate-500 uppercase font-semibold">DISCOVERED PLUGINS</span>
+                    <p className="text-lg font-bold text-white mt-1">{discoveredPlugins.length} Loaded</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">From /plugins folder</p>
+                  </div>
+                </div>
+
+                {/* Cache & DB Flush Panel */}
+                <div className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3">
+                  <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                    <HardDrive className="w-4 h-4 text-indigo-400" />
+                    <span>Database & Cache Management</span>
+                  </h4>
+                  <p className="text-slate-400 text-[11px]">
+                    Flush warm in-memory cache tier while retaining persistent credentials in disk storage.
+                  </p>
+
+                  <button
+                    onClick={handleFlushDb}
+                    disabled={flushing}
+                    className="px-4 py-2.5 rounded-xl bg-red-500/20 text-red-400 hover:bg-red-500/30 border border-red-500/40 font-bold transition-all flex items-center space-x-2"
+                  >
+                    {flushSuccess ? <Check className="w-4 h-4" /> : <RefreshCw className={`w-4 h-4 ${flushing ? 'animate-spin' : ''}`} />}
+                    <span>{flushSuccess ? 'Flushed Warm Cache!' : flushing ? 'Flushing...' : 'Flush Warm Cache Tier'}</span>
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* TAB 4: Register Custom Plugin Directory */}
             {activeTab === 'register' && (
               <form onSubmit={handleRegisterPlugin} className="space-y-4 font-mono text-xs">
                 <div className="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-300">
