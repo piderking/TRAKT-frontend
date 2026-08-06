@@ -12,6 +12,7 @@ import {
   Zap,
   Play
 } from 'lucide-react';
+import { PluginHelpGuide } from '../../components/PluginHelpGuide';
 
 export default function SteamPluginPage() {
   const [telemetry, setTelemetry] = useState<any>(null);
@@ -92,6 +93,9 @@ export default function SteamPluginPage() {
           <span>Sync Steam API</span>
         </button>
       </div>
+
+      {/* Setup Guide */}
+      <PluginHelpGuide pluginId="steam" />
 
       {/* Currently Playing Game Banner */}
       <div className="glass-panel-glow p-6 rounded-2xl border border-cyan-500/30 flex flex-col md:flex-row items-center gap-6">

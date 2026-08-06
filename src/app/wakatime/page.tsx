@@ -11,6 +11,7 @@ import {
   Terminal,
   Activity
 } from 'lucide-react';
+import { PluginHelpGuide } from '../../components/PluginHelpGuide';
 
 export default function WakaTimePluginPage() {
   const [telemetry, setTelemetry] = useState<any>(null);
@@ -92,6 +93,9 @@ export default function WakaTimePluginPage() {
           <span>Refresh Telemetry</span>
         </button>
       </div>
+
+      {/* Setup Guide */}
+      <PluginHelpGuide pluginId="wakatime" />
 
       {/* Metric Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono">

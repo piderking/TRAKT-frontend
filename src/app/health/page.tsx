@@ -11,6 +11,7 @@ import {
   ShieldCheck,
   Zap
 } from 'lucide-react';
+import { PluginHelpGuide } from '../../components/PluginHelpGuide';
 
 export default function HealthPluginPage() {
   const [telemetry, setTelemetry] = useState<any>(null);
@@ -75,6 +76,9 @@ export default function HealthPluginPage() {
           <span>Sync Vitals</span>
         </button>
       </div>
+
+      {/* Setup Guide */}
+      <PluginHelpGuide pluginId="health" />
 
       {/* Vitals Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 font-mono">

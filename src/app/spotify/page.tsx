@@ -10,6 +10,7 @@ import {
   Zap,
   Volume2
 } from 'lucide-react';
+import { PluginHelpGuide } from '../../components/PluginHelpGuide';
 
 export default function SpotifyPluginPage() {
   const [telemetry, setTelemetry] = useState<any>(null);
@@ -90,6 +91,9 @@ export default function SpotifyPluginPage() {
           <span>Refresh Playback</span>
         </button>
       </div>
+
+      {/* Setup Guide */}
+      <PluginHelpGuide pluginId="spotify" />
 
       {/* Now Playing Banner */}
       <div className="glass-panel-glow p-6 rounded-2xl border border-emerald-500/30 flex flex-col md:flex-row items-center gap-6">
