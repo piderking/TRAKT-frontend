@@ -9,6 +9,7 @@ import {
   BarChart2, 
   TrendingUp, 
   List, 
+  Table as TableIcon,
   Columns, 
   Rows, 
   FileText, 
@@ -26,7 +27,11 @@ import {
   Music, 
   Gamepad2, 
   Code2, 
-  Smartphone
+  Smartphone,
+  Code,
+  Copy,
+  ExternalLink,
+  Eye
 } from 'lucide-react';
 
 export interface CanvasWidget {
@@ -35,6 +40,7 @@ export interface CanvasWidget {
   title: string;
   targetProperty?: string;
   targetDomain?: string;
+  colorTheme?: string;
   flexSplit?: 'horizontal' | 'vertical' | 'full';
 }
 
@@ -63,6 +69,16 @@ export function MinimalistCanvasWorkspace() {
   const [editTagsInput, setEditTagsInput] = useState<string>('');
   const [editDirectorInput, setEditDirectorInput] = useState<string>('');
   const [editLocationInput, setEditLocationInput] = useState<string>('');
+
+  // Widget Customizer Modal State
+  const [editingWidget, setEditingWidget] = useState<CanvasWidget | null>(null);
+  const [widgetTitleInput, setWidgetTitleInput] = useState<string>('');
+  const [widgetPropInput, setWidgetPropInput] = useState<string>('director');
+  const [widgetTypeInput, setWidgetTypeInput] = useState<'chart' | 'graph' | 'list' | 'table'>('chart');
+
+  // "View Source" Engine Modal State
+  const [selectedSourceEntity, setSelectedSourceEntity] = useState<any | null>(null);
+  const [copiedSource, setCopiedSource] = useState<boolean>(false);
 
   const originUrl = process.env.NEXT_PUBLIC_API_URL || 'https://backend-development-8adc.up.railway.app';
 
@@ -112,17 +128,16 @@ export function MinimalistCanvasWorkspace() {
   const activePage = pages.find(p => p.id === activePageId) || pages[0];
 
   const availableCommands = [
-    { cmd: '/chart director', desc: 'Create a bar chart container for Director distribution' },
+    { cmd: '/chart director', desc: 'Create an interactive bar chart container for Director distribution' },
     { cmd: '/chart location', desc: 'Create a bar chart container for Locations & Venues' },
     { cmd: '/graph steps', desc: 'Create a line graph container for Daily Step count' },
     { cmd: '/graph bpm', desc: 'Create a line graph container for Heart Rate (BPM)' },
+    { cmd: '/table', desc: 'Create an interactive Notion/Airtable data table container' },
     { cmd: '/list movies', desc: 'Create a domain list container for Movies' },
     { cmd: '/list music', desc: 'Create a domain list container for Music' },
     { cmd: '/list gaming', desc: 'Create a domain list container for Gaming' },
     { cmd: '/list health', desc: 'Create a domain list container for Health & Vitals' },
     { cmd: '/timeline', desc: 'Create a full chronological timeline container' },
-    { cmd: '/split horizontal', desc: 'Split layout horizontally' },
-    { cmd: '/split vertical', desc: 'Split layout vertically' },
     { cmd: '/page new', desc: 'Create a new blank canvas page' }
   ];
 
@@ -135,7 +150,7 @@ export function MinimalistCanvasWorkspace() {
       addWidget({
         id: `widget_${Date.now()}`,
         type: 'chart',
-        title: `Chart: ${prop.toUpperCase()}`,
+        title: `Bar Chart: ${prop.toUpperCase()}`,
         targetProperty: prop,
         flexSplit: 'horizontal'
       });
@@ -147,6 +162,13 @@ export function MinimalistCanvasWorkspace() {
         title: `Metric Graph: ${metric.toUpperCase()}`,
         targetProperty: metric,
         flexSplit: 'horizontal'
+      });
+    } else if (clean === '/table') {
+      addWidget({
+        id: `widget_${Date.now()}`,
+        type: 'table',
+        title: 'Universal Database Data Table',
+        flexSplit: 'full'
       });
     } else if (clean.startsWith('/list')) {
       const domain = clean.replace('/list', '').trim() || 'all';
@@ -193,6 +215,40 @@ export function MinimalistCanvasWorkspace() {
     }));
   };
 
+  const handleOpenCustomizer = (widget: CanvasWidget) => {
+    setEditingWidget(widget);
+    setWidgetTitleInput(widget.title);
+    setWidgetPropInput(widget.targetProperty || 'director');
+    setWidgetTypeInput(widget.type as any);
+  };
+
+  const handleSaveWidgetCustomization = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingWidget) return;
+
+    setPages(pages.map(p => {
+      if (p.id === activePageId) {
+        return {
+          ...p,
+          widgets: p.widgets.map(w => {
+            if (w.id === editingWidget.id) {
+              return {
+                ...w,
+                title: widgetTitleInput,
+                targetProperty: widgetPropInput,
+                type: widgetTypeInput
+              };
+            }
+            return w;
+          })
+        };
+      }
+      return p;
+    }));
+
+    setEditingWidget(null);
+  };
+
   const handleStartEditEntity = (entity: any) => {
     setEditingEntityId(entity.id);
     setEditTagsInput((entity.tags || []).join(', '));
@@ -232,6 +288,135 @@ export function MinimalistCanvasWorkspace() {
     }
   };
 
+  const handleDeleteEntity = async (id: string) => {
+    try {
+      await fetch(`${originUrl}/api/v1/entities/${id}`, { method: 'DELETE' });
+      setEntities(entities.filter(e => e.id !== id));
+    } catch (err) {
+      console.error('Failed to delete entity:', err);
+    }
+  };
+
+  const copyToClipboard = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedSource(true);
+    setTimeout(() => setCopiedSource(false), 2000);
+  };
+
+  // --- Real Data Chart & Line Graph Rendering Helpers ---
+  const renderRealBarChart = (targetProp: string = 'director') => {
+    // Extract property frequency counts across entities
+    const counts: Record<string, number> = {};
+    entities.forEach((e) => {
+      let val = e.properties?.[targetProp] || e[targetProp] || e.domain;
+      if (val) {
+        const valStr = String(val);
+        counts[valStr] = (counts[valStr] || 0) + 1;
+      }
+    });
+
+    const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 6);
+    const maxVal = Math.max(...entries.map(e => e[1]), 1);
+
+    if (entries.length === 0) {
+      return (
+        <div className="p-8 rounded-xl bg-slate-950 border border-slate-800 text-center font-mono text-xs text-slate-500">
+          No records with property <code className="text-amber-400">"{targetProp}"</code> found in database yet.
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-3 font-mono text-xs pt-1">
+        {entries.map(([label, count], idx) => {
+          const pct = Math.round((count / maxVal) * 100);
+          return (
+            <div key={idx} className="space-y-1">
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="text-white font-bold truncate max-w-[200px]">{label}</span>
+                <span className="text-amber-400 font-bold">{count} entries ({pct}%)</span>
+              </div>
+              <div className="h-3 w-full bg-slate-950 rounded-full border border-slate-800 overflow-hidden">
+                <div
+                  className="h-full bg-gradient-to-r from-amber-500 to-indigo-500 rounded-full transition-all duration-500"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    );
+  };
+
+  const renderRealLineGraph = (targetMetric: string = 'steps') => {
+    // Extract numeric values chronologically
+    const points: { label: string; val: number }[] = [];
+    entities.forEach((e) => {
+      const v = e.properties?.[targetMetric] ?? e[targetMetric];
+      if (v !== undefined && v !== null && !isNaN(Number(v))) {
+        points.push({
+          label: e.title || new Date(e.timestamp * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          val: Number(v)
+        });
+      }
+    });
+
+    if (points.length === 0) {
+      return (
+        <div className="p-8 rounded-xl bg-slate-950 border border-slate-800 text-center font-mono text-xs text-slate-500">
+          No numeric metric records for <code className="text-emerald-400">"{targetMetric}"</code> found in database yet.
+        </div>
+      );
+    }
+
+    const values = points.map(p => p.val);
+    const min = Math.min(...values);
+    const max = Math.max(...values, min + 1);
+    const height = 120;
+    const width = 450;
+
+    const coords = points.map((p, i) => {
+      const x = (i / Math.max(points.length - 1, 1)) * (width - 40) + 20;
+      const y = height - ((p.val - min) / (max - min || 1)) * (height - 30) - 15;
+      return { x, y, val: p.val, label: p.label };
+    });
+
+    const pathD = coords.reduce((acc, c, i) => (i === 0 ? `M ${c.x} ${c.y}` : `${acc} L ${c.x} ${c.y}`), '');
+
+    return (
+      <div className="space-y-2 font-mono text-xs">
+        <div className="flex justify-between items-center text-[11px] text-slate-400 pb-1 border-b border-slate-800/80">
+          <span>MIN: <strong className="text-emerald-400">{min}</strong></span>
+          <span>MAX: <strong className="text-emerald-400">{max}</strong></span>
+          <span>SAMPLES: <strong className="text-white">{points.length}</strong></span>
+        </div>
+
+        <div className="relative overflow-x-auto pt-2">
+          <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-32 overflow-visible">
+            {/* Horizontal Grid lines */}
+            <line x1="0" y1="20" x2={width} y2="20" stroke="#1e293b" strokeDasharray="3 3" />
+            <line x1="0" y1="60" x2={width} y2="60" stroke="#1e293b" strokeDasharray="3 3" />
+            <line x1="0" y1="100" x2={width} y2="100" stroke="#1e293b" strokeDasharray="3 3" />
+
+            {/* Polyline Graph Path */}
+            <path d={pathD} fill="none" stroke="#10b981" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
+
+            {/* Data Points */}
+            {coords.map((c, i) => (
+              <g key={i}>
+                <circle cx={c.x} cy={c.y} r="5" className="fill-slate-950 stroke-emerald-400 stroke-2 hover:r-7 transition-all cursor-pointer" />
+                <text x={c.x} y={c.y - 10} textAnchor="middle" fill="#64748b" fontSize="9">
+                  {c.val}
+                </text>
+              </g>
+            ))}
+          </svg>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="space-y-6 font-sans min-h-[85vh] flex flex-col">
       {/* Top Page Tabs & Minimalist Header */}
@@ -259,9 +444,9 @@ export function MinimalistCanvasWorkspace() {
           </button>
         </div>
 
-        <div className="flex items-center space-x-2 font-mono text-xs text-slate-400">
+        <div className="flex items-center space-x-3 font-mono text-xs text-slate-400">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-          <span>Real Persistent DB Engine</span>
+          <span>Real-Time SSE Event Bus Active</span>
         </div>
       </div>
 
@@ -280,7 +465,7 @@ export function MinimalistCanvasWorkspace() {
             onKeyDown={(e) => {
               if (e.key === 'Enter') handleExecuteCommand(commandInput);
             }}
-            placeholder="Type '/' for commands (/chart director, /graph steps, /list movies, /timeline)..."
+            placeholder="Type '/' for commands (/chart director, /graph steps, /table, /list movies)..."
             className="w-full bg-transparent text-white font-mono text-xs focus:outline-none placeholder:text-slate-500"
           />
           {commandInput && (
@@ -319,17 +504,17 @@ export function MinimalistCanvasWorkspace() {
             <div>
               <h3 className="text-xl font-bold text-white tracking-tight font-sans">Blank Canvas Workspace</h3>
               <p className="text-xs text-slate-400 mt-1 max-w-md">
-                Type <code className="text-indigo-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">/chart</code>, <code className="text-indigo-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">/graph</code>, or <code className="text-indigo-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">/list</code> in the command bar above to place custom containers & metrics.
+                Type <code className="text-indigo-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">/chart</code>, <code className="text-indigo-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">/graph</code>, <code className="text-indigo-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">/table</code>, or <code className="text-indigo-400 bg-slate-900 px-2 py-0.5 rounded border border-slate-800">/list</code> in the command bar above.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center justify-center gap-2 pt-2 text-xs">
               <button
-                onClick={() => handleExecuteCommand('/list all')}
+                onClick={() => handleExecuteCommand('/table')}
                 className="px-4 py-2 rounded-xl bg-slate-900 text-slate-200 hover:text-white border border-slate-800 hover:border-indigo-500/40 flex items-center space-x-1.5 transition-all"
               >
-                <List className="w-3.5 h-3.5 text-indigo-400" />
-                <span>+ Add Stream Container</span>
+                <TableIcon className="w-3.5 h-3.5 text-indigo-400" />
+                <span>+ Add Data Table</span>
               </button>
 
               <button
@@ -355,25 +540,108 @@ export function MinimalistCanvasWorkspace() {
             {activePage.widgets.map((w) => (
               <div
                 key={w.id}
-                className="glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 shadow-xl"
+                className={`glass-panel p-6 rounded-2xl border border-slate-800 flex flex-col justify-between space-y-4 shadow-xl ${
+                  w.type === 'table' || w.type === 'timeline' ? 'md:col-span-2' : ''
+                }`}
               >
+                {/* Container Header with Customizer, View Source & Delete Buttons */}
                 <div className="flex items-center justify-between pb-3 border-b border-slate-800">
                   <div className="flex items-center space-x-2">
                     <span className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                      {w.type === 'chart' ? <BarChart2 className="w-4 h-4" /> : w.type === 'graph' ? <TrendingUp className="w-4 h-4" /> : <List className="w-4 h-4" />}
+                      {w.type === 'chart' ? <BarChart2 className="w-4 h-4" /> : w.type === 'graph' ? <TrendingUp className="w-4 h-4" /> : w.type === 'table' ? <TableIcon className="w-4 h-4" /> : <List className="w-4 h-4" />}
                     </span>
                     <h4 className="font-bold text-white text-sm font-sans">{w.title}</h4>
                   </div>
 
-                  <button
-                    onClick={() => removeWidget(w.id)}
-                    className="text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-900 transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
+                  <div className="flex items-center space-x-1 font-mono text-xs">
+                    <button
+                      onClick={() => handleOpenCustomizer(w)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-indigo-300 hover:bg-slate-900 transition-colors flex items-center space-x-1"
+                    >
+                      <Sliders className="w-3.5 h-3.5" />
+                      <span className="text-[10px]">Customize</span>
+                    </button>
+
+                    <button
+                      onClick={() => removeWidget(w.id)}
+                      className="text-slate-600 hover:text-red-400 p-1.5 rounded-lg hover:bg-slate-900 transition-colors"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
 
-                {/* Widget Contents */}
+                {/* Render Container Content Types */}
+                {w.type === 'chart' && renderRealBarChart(w.targetProperty || 'director')}
+                {w.type === 'graph' && renderRealLineGraph(w.targetProperty || 'steps')}
+
+                {w.type === 'table' && (
+                  <div className="overflow-x-auto font-mono text-xs pt-1">
+                    {entities.length === 0 ? (
+                      <div className="p-8 text-center text-slate-500">No table records in database.</div>
+                    ) : (
+                      <table className="w-full text-left border-collapse">
+                        <thead>
+                          <tr className="border-b border-slate-800 text-[10px] text-slate-400 uppercase">
+                            <th className="p-2.5">Domain</th>
+                            <th className="p-2.5">Title & Subtitle</th>
+                            <th className="p-2.5">Tags</th>
+                            <th className="p-2.5">Properties (Director, Location)</th>
+                            <th className="p-2.5">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-800/80">
+                          {entities.map((item) => (
+                            <tr key={item.id} className="hover:bg-slate-900/60 transition-colors">
+                              <td className="p-2.5">
+                                <span className="px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 uppercase font-bold text-[10px]">
+                                  {item.domain}
+                                </span>
+                              </td>
+                              <td className="p-2.5 font-bold text-white">
+                                <div>{item.title}</div>
+                                {item.subtitle && <div className="text-[10px] text-slate-400 font-normal">{item.subtitle}</div>}
+                              </td>
+                              <td className="p-2.5">
+                                <div className="flex flex-wrap gap-1">
+                                  {(item.tags || []).map((t: string, idx: number) => (
+                                    <span key={idx} className="px-1.5 py-0.5 rounded bg-slate-900 text-slate-300 border border-slate-800 text-[9px]">
+                                      #{t}
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                              <td className="p-2.5 text-[11px] text-slate-300">
+                                {item.properties?.director && <div>🎬 {item.properties.director}</div>}
+                                {item.properties?.location && <div>📍 {item.properties.location}</div>}
+                                {item.properties?.rating && <div>★ {item.properties.rating}</div>}
+                              </td>
+                              <td className="p-2.5">
+                                <div className="flex items-center space-x-2">
+                                  <button
+                                    onClick={() => setSelectedSourceEntity(item)}
+                                    className="p-1 rounded text-slate-400 hover:text-indigo-400 hover:bg-slate-900 transition-colors flex items-center space-x-1"
+                                  >
+                                    <Code className="w-3.5 h-3.5" />
+                                    <span className="text-[10px]">Source</span>
+                                  </button>
+
+                                  <button
+                                    onClick={() => handleDeleteEntity(item.id)}
+                                    className="p-1 rounded text-slate-600 hover:text-red-400 hover:bg-slate-900 transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    )}
+                  </div>
+                )}
+
                 {w.type === 'list' && (
                   <div className="space-y-3 font-mono text-xs">
                     {entities.length === 0 ? (
@@ -389,13 +657,23 @@ export function MinimalistCanvasWorkspace() {
                                 <h5 className="font-bold text-white text-sm">{item.title}</h5>
                                 {item.subtitle && <p className="text-slate-400 text-[11px]">{item.subtitle}</p>}
                               </div>
-                              <button
-                                onClick={() => handleStartEditEntity(item)}
-                                className="text-slate-500 hover:text-indigo-400 p-1 text-[11px] flex items-center space-x-1"
-                              >
-                                <Edit3 className="w-3.5 h-3.5" />
-                                <span>Edit Tags</span>
-                              </button>
+
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={() => setSelectedSourceEntity(item)}
+                                  className="text-slate-500 hover:text-indigo-400 p-1 text-[11px] flex items-center space-x-1"
+                                >
+                                  <Code className="w-3.5 h-3.5" />
+                                  <span>Source</span>
+                                </button>
+                                <button
+                                  onClick={() => handleStartEditEntity(item)}
+                                  className="text-slate-500 hover:text-indigo-400 p-1 text-[11px] flex items-center space-x-1"
+                                >
+                                  <Edit3 className="w-3.5 h-3.5" />
+                                  <span>Edit</span>
+                                </button>
+                              </div>
                             </div>
 
                             {/* Inline Tag & Property Editor */}
@@ -448,23 +726,107 @@ export function MinimalistCanvasWorkspace() {
                     )}
                   </div>
                 )}
-
-                {w.type === 'chart' && (
-                  <div className="p-6 rounded-xl bg-slate-950 border border-slate-800 text-center font-mono text-xs text-slate-400">
-                    Bar Chart visualization container for <code className="text-indigo-400">{w.targetProperty}</code> property distribution.
-                  </div>
-                )}
-
-                {w.type === 'graph' && (
-                  <div className="p-6 rounded-xl bg-slate-950 border border-slate-800 text-center font-mono text-xs text-slate-400">
-                    Line Graph time-series container for <code className="text-indigo-400">{w.targetProperty}</code> metric values.
-                  </div>
-                )}
               </div>
             ))}
           </div>
         )}
       </div>
+
+      {/* Widget Settings Customizer Drawer Modal */}
+      {editingWidget && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-800 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Sliders className="w-5 h-5 text-indigo-400" />
+                <span>Customize Container Widget</span>
+              </h3>
+              <button onClick={() => setEditingWidget(null)} className="text-slate-400 hover:text-white text-xs font-mono">
+                ✕ Close
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveWidgetCustomization} className="space-y-4 font-mono text-xs">
+              <div className="space-y-1">
+                <label className="text-slate-300 font-semibold">CONTAINER TITLE</label>
+                <input
+                  type="text"
+                  required
+                  value={widgetTitleInput}
+                  onChange={e => setWidgetTitleInput(e.target.value)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 font-semibold">CONTAINER TYPE</label>
+                <select
+                  value={widgetTypeInput}
+                  onChange={e => setWidgetTypeInput(e.target.value as any)}
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500 capitalize"
+                >
+                  <option value="chart">Bar Chart</option>
+                  <option value="graph">Line Graph</option>
+                  <option value="table">Data Table</option>
+                  <option value="list">Stream List</option>
+                </select>
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-slate-300 font-semibold">TARGET METRIC / PROPERTY</label>
+                <input
+                  type="text"
+                  value={widgetPropInput}
+                  onChange={e => setWidgetPropInput(e.target.value)}
+                  placeholder="director, location, rating, bpm, steps, hours"
+                  className="w-full px-3.5 py-2 rounded-xl bg-slate-950 border border-slate-800 text-white focus:outline-none focus:border-indigo-500"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="w-full py-2.5 rounded-xl bg-indigo-500 text-white font-bold text-xs shadow-lg transition-all"
+              >
+                Save Widget Customization
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* "View Source" Raw Data Payload Modal */}
+      {selectedSourceEntity && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4">
+          <div className="glass-panel p-6 rounded-2xl border border-slate-800 max-w-xl w-full space-y-4 shadow-2xl font-mono text-xs">
+            <div className="flex justify-between items-center pb-3 border-b border-slate-800">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Code className="w-4 h-4 text-emerald-400" />
+                <span>View Source Engine: Raw Payload</span>
+              </h3>
+              <button onClick={() => setSelectedSourceEntity(null)} className="text-slate-400 hover:text-white text-xs">
+                ✕ Close
+              </button>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <span className="text-[10px] text-slate-400 uppercase font-semibold">ENTITY ID: {selectedSourceEntity.id}</span>
+                <button
+                  onClick={() => copyToClipboard(JSON.stringify(selectedSourceEntity, null, 2))}
+                  className="flex items-center space-x-1 text-indigo-400 hover:text-indigo-300 text-[11px]"
+                >
+                  {copiedSource ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedSource ? 'Copied Payload!' : 'Copy JSON'}</span>
+                </button>
+              </div>
+
+              <pre className="p-4 rounded-xl bg-slate-950 border border-slate-800 text-emerald-400 overflow-x-auto text-[11px] max-h-80 selection:bg-emerald-950">
+                {JSON.stringify(selectedSourceEntity, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
