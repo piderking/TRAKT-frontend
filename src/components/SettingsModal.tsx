@@ -45,6 +45,12 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [spotifyClientSecret, setSpotifyClientSecret] = useState('');
   const [savedTokenPlugin, setSavedTokenPlugin] = useState<string | null>(null);
 
+  // Historical Data Fetcher State
+  const [historicalDays, setHistoricalDays] = useState<number>(1);
+  const [fetchingHistorical, setFetchingHistorical] = useState(false);
+  const [historicalSuccess, setHistoricalSuccess] = useState(false);
+  const [historicalResult, setHistoricalResult] = useState<any>(null);
+
   // Custom Plugin Registration Form
   const [regPluginId, setRegPluginId] = useState('');
   const [regName, setRegName] = useState('');
@@ -136,6 +142,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       fetchSystemData();
     } catch (err) {
       console.error('Failed to toggle fetcher:', err);
+    }
+  };
+
+  const handleTriggerHistoricalBackfill = async () => {
+    setFetchingHistorical(true);
+    try {
+      const res = await fetch(`${originUrl}/api/v1/plugins/fetchers/historical?days=${historicalDays}`, {
+        method: 'POST'
+      });
+      const data = await res.json();
+      setHistoricalResult(data);
+      setHistoricalSuccess(true);
+      setTimeout(() => setHistoricalSuccess(false), 2500);
+      fetchSystemData();
+    } catch (err) {
+      console.error('Failed to trigger historical backfill:', err);
+    } finally {
+      setFetchingHistorical(false);
     }
   };
 
@@ -315,6 +339,49 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             {/* TAB 2: Dynamic Plugin Directories & Tokens */}
             {activeTab === 'plugins' && (
               <div className="space-y-4 font-mono text-xs">
+                {/* HISTORICAL TELEMETRY BACKFILL ENGINE PANEL */}
+                <div className="p-5 rounded-2xl bg-indigo-950/40 border border-indigo-500/30 space-y-3 shadow-xl">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <h4 className="font-bold text-white text-sm font-sans flex items-center gap-2">
+                        <Activity className="w-4 h-4 text-indigo-400" />
+                        <span>Historical Telemetry Backfill Engine</span>
+                      </h4>
+                      <p className="text-slate-400 text-[11px] mt-0.5">
+                        Fetch and backfill historical activity records into persistent database tier.
+                      </p>
+                    </div>
+
+                    <div className="flex items-center space-x-2">
+                      <select
+                        value={historicalDays}
+                        onChange={e => setHistoricalDays(parseInt(e.target.value))}
+                        className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-800 text-white font-bold text-[11px]"
+                      >
+                        <option value={1}>1 Day (Default)</option>
+                        <option value={7}>7 Days</option>
+                        <option value={30}>30 Days</option>
+                        <option value={90}>90 Days</option>
+                        <option value={365}>1 Year (365 Days)</option>
+                      </select>
+
+                      <button
+                        onClick={handleTriggerHistoricalBackfill}
+                        disabled={fetchingHistorical}
+                        className="px-4 py-1.5 rounded-xl bg-indigo-500 hover:bg-indigo-400 text-white font-bold text-[11px] shadow-lg transition-all flex items-center space-x-1.5"
+                      >
+                        {historicalSuccess ? <Check className="w-3.5 h-3.5" /> : <RefreshCw className={`w-3.5 h-3.5 ${fetchingHistorical ? 'animate-spin' : ''}`} />}
+                        <span>{historicalSuccess ? 'Historical Data Synced!' : fetchingHistorical ? 'Syncing...' : 'Trigger Backfill'}</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {historicalResult && (
+                    <div className="p-3 rounded-xl bg-slate-900/80 border border-indigo-500/20 text-[11px] text-slate-300">
+                      Total Historical Records Backfilled: <strong className="text-emerald-400">{historicalResult.total_records_backfilled || 0}</strong>
+                    </div>
+                  )}
+                </div>
                 {discoveredPlugins.map((plugin) => (
                   <div key={plugin.id} className="p-5 rounded-2xl bg-slate-950 border border-slate-800 space-y-3 shadow-lg">
                     <div className="flex justify-between items-start">
