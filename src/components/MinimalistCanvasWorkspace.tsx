@@ -80,6 +80,33 @@ export function MinimalistCanvasWorkspace() {
 
   useEffect(() => {
     fetchEntities();
+
+    // Connect to Real-Time SSE Stream for Instant Database Mutative Reactivity
+    let eventSource: EventSource | null = null;
+    try {
+      eventSource = new EventSource(`${originUrl}/api/v1/events/stream`);
+      eventSource.onmessage = (e) => {
+        try {
+          const parsed = JSON.parse(e.data);
+          if (parsed.event === 'ENTITY_CREATED' || parsed.event === 'ENTITY_UPDATED' || parsed.event === 'DB_MUTATION') {
+            fetchEntities();
+          }
+        } catch (err) {
+          fetchEntities();
+        }
+      };
+    } catch (err) {
+      console.error('SSE EventSource setup error:', err);
+    }
+
+    const interval = setInterval(() => {
+      fetchEntities();
+    }, 5000);
+
+    return () => {
+      if (eventSource) eventSource.close();
+      clearInterval(interval);
+    };
   }, []);
 
   const activePage = pages.find(p => p.id === activePageId) || pages[0];
